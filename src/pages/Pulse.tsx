@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import { BASKETS, MARKETS, PERIODS, SECTORS, brand } from '../config'
 import { basket, demoSeries, localTime, ret, session } from '../engine'
 import { Chg, SourceLine, Tag } from '../ui'
+import { DEMO, ago, useStatus } from '../data'
+import { Changes, Fx } from './Live'
 
 type MK = 'india' | 'us'
 const KEYS: MK[] = ['india', 'us']
@@ -15,6 +17,7 @@ function useNow() {
 
 export default function Pulse() {
   const now = useNow()
+  const st = useStatus()
   const [mk, setMk] = useState<MK>('india')
   const [per, setPer] = useState('1 Month')
   const rows = SECTORS.map(s => ({ s, r: ret(demoSeries(`${mk}:${s}`), per) })).sort((a, b) => (b.r ?? 0) - (a.r ?? 0))
@@ -25,14 +28,27 @@ export default function Pulse() {
         <div>
           <p className="mute">{now.toLocaleDateString(undefined, { dateStyle: 'full' })}</p>
           <h1>{brand.tagline}</h1>
-          <p className="lede">No verified market summary is available, because no live data provider is connected in this build. <Link to="/methodology/limitations/no-live-data">See the limitation</Link>.</p>
+          <p className="lede">No verified market summary is available, because no licensed price provider is connected. <Link to="/methodology/limitations/no-live-data">See the limitation</Link>.</p>
         </div>
         <div className="sessions">
           {KEYS.map(k => <p key={k}><b>{MARKETS[k].name}</b>, {localTime(MARKETS[k].tz, now)}<br /><span className="mute">{session(MARKETS[k], now)}</span></p>)}
-          <p className="mute">Last successful data update: none, no live provider is connected.</p>
+          <p className="mute">Last data refresh: {st ? ago(st.generatedAt) : 'not available yet'}. Data is delayed or end-of-day, never real-time.</p>
         </div>
       </div>
 
+      <Fx />
+      <section>
+        <h2>What Changed?</h2>
+        <Changes />
+      </section>
+      {!DEMO && (
+        <section>
+          <h2>Markets</h2>
+          <p className="lede">Index, sector and price panels are not shown because no licensed price source is connected yet. <Link to="/methodology/limitations/no-live-data">Why</Link></p>
+        </section>
+      )}
+      {DEMO && (
+        <>
       <section>
         <h2>Global Market Pulse</h2>
         <div className="cols">
@@ -77,11 +93,6 @@ export default function Pulse() {
       </section>
 
       <section>
-        <h2>What Changed?</h2>
-        <p className="lede">Nothing to show. No event provider is connected, and this section lists only events that carry a source, a timestamp and a company or sector association. <Link to="/methodology/policy/corrections">Event policy</Link></p>
-      </section>
-
-      <section>
         <h2>Technology and AI Focus</h2>
         <ul className="plain">
           {BASKETS.map(b => {
@@ -97,9 +108,12 @@ export default function Pulse() {
         <p><Link to="/technology">Explore the technology value chain</Link></p>
       </section>
 
+        </>
+      )}
+
       <section>
         <h2>Sources and method</h2>
-        <p>Every figure on this page comes from <Link to="/methodology/sources/demo-fixtures">the DEMO fixture generator</Link>. There is no live market data here to age, rank or explain. <Link to="/methodology">Open Methodology and Data Sources</Link> for the source registry, the freshness ledger, basket formulas and known limitations.</p>
+        <p>USD/INR comes from <Link to="/methodology/sources/frankfurter">Frankfurter</Link> and filings from <Link to="/methodology/sources/sec-edgar">SEC EDGAR</Link>, refreshed on a schedule by GitHub Actions. {DEMO ? 'Synthetic DEMO figures are switched on in this build.' : 'No price panels are shown because no licensed price source is connected.'} <Link to="/methodology">Open Methodology and Data Sources</Link> for the registry, the freshness ledger and known limitations.</p>
       </section>
     </>
   )

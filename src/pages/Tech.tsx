@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { BASKETS, LAYERS, PERIODS } from '../config'
 import { basket, ret } from '../engine'
 import { Chg, SourceLine, Spark, Tag } from '../ui'
+import { DEMO } from '../data'
 
 export default function Tech() {
   const [i, setI] = useState(0)
@@ -27,7 +28,7 @@ export default function Tech() {
         {L.contextual && <p className="note">Private organizations, shown for context only and never in price tables: {L.contextual.join(', ')}.</p>}
       </section>
 
-      <section>
+      {DEMO && <section>
         <h2>Technology Performance Baskets</h2>
         <p className="lede">Custom analytical baskets, not official indices. Equal-weighted and normalised to 100, here built on DEMO series.</p>
         <div className="cols">
@@ -48,7 +49,13 @@ export default function Tech() {
           })}
         </div>
         <SourceLine />
-      </section>
+      </section>}
+      {!DEMO && (
+        <section>
+          <h2>Technology Performance Baskets</h2>
+          <p className="lede">Baskets need real price history, so they are switched off until a licensed price source is connected. Their definitions are on <Link to="/methodology/baskets/method">the methodology page</Link>.</p>
+        </section>
+      )}
     </>
   )
 }

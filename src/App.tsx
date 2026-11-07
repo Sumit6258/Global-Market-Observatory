@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react'
 import { HashRouter, MemoryRouter, Link, NavLink, Navigate, Route, Routes } from 'react-router-dom'
 import { LEDGER, brand } from './config'
 import { Tag } from './ui'
+import { DEMO, useStatus } from './data'
 import Pulse from './pages/Pulse'
 import Tech from './pages/Tech'
 import Narrative from './pages/Narrative'
@@ -12,6 +13,7 @@ const R = ({ children }: { children: ReactNode }) => (import.meta.env.VITE_PREVI
 
 function Shell({ children }: { children: ReactNode }) {
   const [dark, setDark] = useState(document.documentElement.dataset.theme === 'dark')
+  const st = useStatus()
   const toggle = () => {
     const t = dark ? 'light' : 'dark'
     document.documentElement.dataset.theme = t
@@ -21,7 +23,7 @@ function Shell({ children }: { children: ReactNode }) {
   return (
     <>
       <div className="demo-bar" role="status">
-        Demo build. Every figure is a synthetic fixture, not market data. <Link to="/methodology/limitations/no-live-data">Why</Link>
+        {DEMO ? 'Demo build. Every figure is a synthetic fixture, not market data. ' : 'Delayed and end-of-day data from public sources, refreshed on a schedule. Not real-time. '}<Link to={DEMO ? '/methodology/limitations/no-live-data' : '/methodology/freshness/ledger'}>{DEMO ? 'Why' : 'Freshness ledger'}</Link>
       </div>
       <header className="top">
         <div className="wrap bar">
@@ -34,9 +36,9 @@ function Shell({ children }: { children: ReactNode }) {
           <div className="util">
             <Link to="/methodology">Methodology</Link>
             <details className="ds">
-              <summary aria-label="Data status"><Tag /></summary>
+              <summary aria-label="Data status">{DEMO ? <Tag /> : <span className="tag">DATA STATUS</span>}</summary>
               <div className="pop">
-                {LEDGER.map(r => <div className="prow" key={r.ds}><span>{r.ds}</span><Tag s={r.st} /></div>)}
+                {(st?.datasets ?? []).map(r => <div className="prow" key={r.id}><span>{r.name}{r.error ? ' (refresh failed)' : ''}</span><Tag s={r.status} /></div>)}{DEMO && LEDGER.map(r => <div className="prow" key={r.ds}><span>{r.ds}</span><Tag s={r.st} /></div>)}{!st && <p className="mute">Status not available yet.</p>}
                 <Link to="/methodology/freshness/ledger">Open the full ledger</Link>
               </div>
             </details>

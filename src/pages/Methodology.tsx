@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { BASKETS, LAYERS, LEDGER, LIMITATIONS, MARKETS, METRICS, MIN_COVERAGE, REVIEWED, SOURCES, STATUS_RULES, type Status } from '../config'
 import { basket, hm, pct } from '../engine'
 import { Tag } from '../ui'
+import { DEMO, ago, useStatus } from '../data'
 
 const repo = import.meta.env.VITE_REPO as string | undefined
 const TOC: [string, string, string][] = [
@@ -13,6 +14,7 @@ const TOC: [string, string, string][] = [
 
 export default function Methodology() {
   const { kind, id } = useParams()
+  const st = useStatus()
   const target = kind && id ? `${kind}-${id}` : ''
   useEffect(() => { if (target) document.getElementById(target)?.scrollIntoView(); else window.scrollTo(0, 0) }, [target])
   const cl = (k: string) => 'entry' + (target === k ? ' hl' : '')
@@ -52,8 +54,8 @@ export default function Methodology() {
           <h2>Data freshness</h2>
           <div className="tbl"><table>
             <thead><tr><th>Dataset</th><th>Source</th><th>Status</th><th>Exchange as-of</th><th>Age</th></tr></thead>
-            <tbody>{LEDGER.map(r => <tr key={r.ds}><td>{r.ds}</td><td>{r.src === 'none' ? 'No source' : <Link to={`/methodology/sources/${r.src}`}>{r.src}</Link>}</td><td><Tag s={r.st} /></td><td>none</td><td>n/a</td></tr>)}</tbody></table></div>
-          <p><b>Snapshot pipeline.</b> No snapshot workflow exists yet. When one is added, this page shows its actual last successful run, because scheduled runs can be delayed, skipped or paused. <b>Provider health.</b> No providers are connected.</p>
+            <tbody>{(st?.datasets ?? []).map(r => <tr key={r.id}><td>{r.name}{r.note ? `, ${r.note}` : ''}{r.error ? `. Last refresh failed, showing the last good data: ${r.error}` : ''}</td><td><Link to={`/methodology/sources/${r.source}`}>{r.source}</Link></td><td><Tag s={r.status} /></td><td>{r.asOf ?? 'none'}</td><td>{ago(r.asOf)}</td></tr>)}{DEMO && LEDGER.map(r => <tr key={r.ds}><td>{r.ds}</td><td>{r.src === 'none' ? 'No source' : <Link to={`/methodology/sources/${r.src}`}>{r.src}</Link>}</td><td><Tag s={r.st} /></td><td>none</td><td>n/a</td></tr>)}{!st && <tr><td colSpan={5}>The status file has not been generated yet. Run the Refresh data workflow once.</td></tr>}</tbody></table></div>
+          <p><b>Snapshot pipeline.</b> The Refresh data workflow runs twice a day. Scheduled runs can be delayed, skipped or paused, so the real last run is shown: {st ? <>{st.runUrl ? <a href={st.runUrl}>run</a> : 'run'} generated {st.generatedAt}, {ago(st.generatedAt)}.</> : 'not available yet.'} <b>Provider health.</b> A failed refresh keeps the last good file, and the table above reports the error.</p>
           <p><b>Market calendar.</b> Session hours in use: {Object.values(MARKETS).map(m => `${m.name} ${hm(m.open[0])} to ${hm(m.open[1])} (${m.tz})${m.pre !== undefined ? `, pre-market from ${hm(m.pre)}, after-hours until ${hm(m.after ?? 0)}` : ''}`).join('; ')}. Holiday calendars are not loaded.</p>
         </section>
 
@@ -102,7 +104,7 @@ export default function Methodology() {
 
         <section id="coverage-matrix" className={cl('coverage-matrix')}>
           <h2>Classification and coverage</h2>
-          <p>No classification dataset is connected. Value-chain layers and the core, enabling and adjacent roles are draft judgments from the product brief. {companies} companies appear in the draft rosters. None has live quotes, history or fundamentals.</p>
+          <p>No classification dataset is connected. Value-chain layers and the core, enabling and adjacent roles are draft judgments from the product brief. {companies} companies appear in the draft rosters. None has price quotes, price history or fundamentals yet. US filings cover the US names, as the freshness ledger states.</p>
         </section>
 
         <section id="limitations-register" className={cl('limitations-register')}>
@@ -114,13 +116,13 @@ export default function Methodology() {
         <section id="policy-corrections" className={cl('policy-corrections')}>
           <h2>Policy and corrections</h2>
           <p><b>Event policy.</b> An event is listed only with a headline, company or industry, event date, publication timestamp, named source, factual description and the original URL. No unsourced summaries and no causal claims.</p>
-          <p><b>Change log.</b> {REVIEWED}: first build with synthetic DEMO data, source registry, freshness ledger, basket methodology and metric definitions.</p>
+          <p><b>Change log.</b> {REVIEWED}: real data pipeline (Frankfurter FX and SEC EDGAR filings), live freshness ledger, synthetic figures switched off. 2026-11-06: first build with synthetic DEMO data, source registry, basket methodology and metric definitions.</p>
           <p><b>Corrections.</b> {issue ? <a href={issue}>Report a data or methodology issue</a> : 'The issue link appears once the site is built in GitHub Actions.'}</p>
         </section>
 
         <section id="attribution-licences" className={cl('attribution-licences')}>
           <h2>Attribution</h2>
-          <p>Built with React and React Router, both MIT licensed. Fonts are system fonts. No third-party data or logos are used. Disclaimer: this platform is for financial information and research and is not individualized investment advice.</p>
+          <p>Built with React and React Router, both MIT licensed. Fonts are system fonts. Data: exchange rates from Frankfurter (blended central-bank reference rates) and filings from SEC EDGAR. No third-party logos are used. Disclaimer: this platform is for financial information and research and is not individualized investment advice.</p>
         </section>
       </article>
     </div>

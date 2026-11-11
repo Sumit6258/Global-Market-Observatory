@@ -3,18 +3,19 @@ import { Link, useParams } from 'react-router-dom'
 import { BASKETS, INDIA_COVERAGE, LAYERS, LEDGER, LIMITATIONS, MARKETS, METRICS, MIN_COVERAGE, REVIEWED, SOURCES, STATUS_RULES, type Status } from '../config'
 import { basket, hm, pct } from '../engine'
 import { Tag } from '../ui'
-import { ago, effStatus, useStatus } from '../data'
+import { ago, effStatus, useData, useStatus, type FundFile } from '../data'
 
 const repo = import.meta.env.VITE_REPO as string | undefined
 const TOC: [string, string, string][] = [
   ['guide', 'status', 'How to read this platform'], ['sources', 'registry', 'Data sources'], ['freshness', 'ledger', 'Data freshness'],
-  ['baskets', 'method', 'Basket methodology'], ['metrics', 'defs', 'Metric definitions'], ['coverage', 'matrix', 'Classification and coverage'], ['coverage', 'india', 'Indian market coverage'],
+  ['baskets', 'method', 'Basket methodology'], ['metrics', 'defs', 'Metric definitions'], ['fundamentals', 'defs', 'Fundamentals definitions'], ['coverage', 'matrix', 'Classification and coverage'], ['coverage', 'india', 'Indian market coverage'],
   ['limitations', 'register', 'Known limitations'], ['policy', 'corrections', 'Policy and corrections'], ['attribution', 'licences', 'Attribution'],
 ]
 
 export default function Methodology() {
   const { kind, id } = useParams()
   const st = useStatus()
+  const fund = useData<FundFile>('fundamentals.json').data
   const target = kind && id ? `${kind}-${id}` : ''
   useEffect(() => { if (target) document.getElementById(target)?.scrollIntoView(); else window.scrollTo(0, 0) }, [target])
   const cl = (k: string) => 'entry' + (target === k ? ' hl' : '')
@@ -103,6 +104,17 @@ export default function Methodology() {
             </div>))}
         </section>
 
+        <section id="fundamentals-defs" className={cl('fundamentals-defs')}>
+          <h2>Fundamentals definitions</h2>
+          <p>Annual figures only, from 10-K filings in SEC XBRL company facts. A flow item must cover a full year (350 to 380 days) and a balance item must be a point in time. Periods are identified by their dates, because the fy and fp fields in company facts describe the filing, not the fact. Every metric for a company comes from the same fiscal year as its revenue, and an item missing for that year is shown as n/a instead of being taken from an older year. When a year is restated, the latest filing wins. Values are absolute US dollars (EPS in dollars per share). Derived indicators use year-end balances, not averages, are calculated only when their inputs exist, and are dropped when the result is implausible. Total debt is not derived: long-term debt is the reported noncurrent amount only.</p>
+          {fund ? (
+            <div className="tbl"><table>
+              <thead><tr><th>Group</th><th>Metric</th><th>XBRL concepts in priority order, or formula</th></tr></thead>
+              <tbody>{fund.schema.map(x => <tr key={x.key}><td>{x.group}</td><td>{x.label}</td><td>{x.concepts ? x.concepts.join(', ') : x.formula}</td></tr>)}</tbody>
+            </table></div>
+          ) : <p className="mute">The definitions load with the first successful fundamentals refresh.</p>}
+        </section>
+
         <section id="coverage-matrix" className={cl('coverage-matrix')}>
           <h2>Classification and coverage</h2>
           <p>No classification dataset is connected. Value-chain layers and the core, enabling and adjacent roles are draft judgments from the product brief. {companies} companies appear in the draft rosters. None has price quotes, price history or fundamentals yet. US filings cover the US names, as the freshness ledger states.</p>
@@ -126,7 +138,7 @@ export default function Methodology() {
         <section id="policy-corrections" className={cl('policy-corrections')}>
           <h2>Policy and corrections</h2>
           <p><b>Event policy.</b> An event is listed only with a headline, company or industry, event date, publication timestamp, named source, factual description and the original URL. No unsourced summaries and no causal claims.</p>
-          <p><b>Change log.</b> {REVIEWED}: audit fixes. Calendar-based USD/INR returns, STALE status, validated refreshes, filing amendments and 8-K categories, synthetic basket calculation removed from production, Indian coverage report. Earlier on the same day: real data pipeline (Frankfurter FX and SEC EDGAR filings), live freshness ledger, synthetic figures switched off. 2026-11-06: first build with synthetic DEMO data, source registry, basket methodology and metric definitions.</p>
+          <p><b>Change log.</b> 2026-11-11: annual US fundamentals from SEC XBRL company facts, with statements and derived indicators. 2026-11-10: audit fixes, calendar-based USD/INR returns, STALE status, validated refreshes, filing amendments and 8-K categories, synthetic basket calculation removed from production, Indian coverage report. 2026-11-07: real data pipeline (Frankfurter FX and SEC EDGAR filings) and the live freshness ledger. 2026-11-06: first build with synthetic DEMO data.</p>
           <p><b>Corrections.</b> {issue ? <a href={issue}>Report a data or methodology issue</a> : 'The issue link appears once the site is built in GitHub Actions.'}</p>
         </section>
 

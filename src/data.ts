@@ -8,6 +8,10 @@ export interface StatusFile { generatedAt: string; runUrl?: string; datasets: DS
 export interface Filing { ticker: string; company: string; cik?: number; accession?: string; form: string; filed: string; accepted: string; period: string | null; items: string[]; url: string }
 export interface FilingsFile { retrievedAt: string; since: string; events: Filing[] }
 
+export interface FundMetric { key: string; label: string; group: string; kind: string; concepts?: string[]; formula?: string }
+export interface FundCo { ticker: string; company: string; cik: number; fiscalYearEnd: string; filed: string; accession: string; metrics: Record<string, number | null>; derived: Record<string, number | null>; concepts: Record<string, string>; missing: string[] }
+export interface FundFile { retrievedAt: string; schema: FundMetric[]; unmapped: string[]; companies: FundCo[] }
+
 export function useData<T>(name: string) {
   const [s, set] = useState<{ data?: T; error?: string; loading: boolean }>({ loading: true })
   useEffect(() => {

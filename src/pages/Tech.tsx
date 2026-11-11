@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { BASKETS, LAYERS, PERIODS } from '../config'
 import { basket, ret } from '../engine'
 import { Chg, SourceLine, Spark, Tag } from '../ui'
+import Fundamentals from './Fundamentals'
 
 export default function Tech() {
   const [i, setI] = useState(0)
@@ -26,6 +27,8 @@ export default function Tech() {
         ) : <p>No publicly listed businesses are assigned to this layer yet.</p>}
         {L.contextual && <p className="note">Private organizations, shown for context only and never in price tables: {L.contextual.join(', ')}.</p>}
       </section>
+
+      <Fundamentals />
 
       {DEMO && <section>
         <h2>Technology Performance Baskets</h2>

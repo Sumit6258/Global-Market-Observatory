@@ -9,7 +9,7 @@ A static financial-research site (React, TypeScript, Vite) on GitHub Pages, refr
 | US filings for 21 companies: 8-K, 10-Q, 10-K and their amendments (SEC EDGAR) | Implemented, data verified in the repository |
 | Freshness ledger, STALE status, validation before publishing | Implemented |
 | Indian index and equity prices (NSE, BSE) | Not implemented, blocked by licensing |
-| US company fundamentals (SEC XBRL company facts) | Planned |
+| US annual fundamentals and ratios from SEC XBRL company facts | Implemented, tested on fixtures only, needs its first real run to verify |
 | US prices, baskets, sector landscape | Not implemented, need a licensed price source |
 
 Nothing synthetic ships to production. Synthetic figures exist only in development builds made with `VITE_DEMO=1`.

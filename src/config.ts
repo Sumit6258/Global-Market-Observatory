@@ -1,5 +1,5 @@
 export const brand = { name: 'Global Market Observatory', tagline: 'Markets are moving. Understand what is behind them.' }
-export const REVIEWED = '2026-11-07'
+export const REVIEWED = '2026-11-11'
 export const MIN_COVERAGE = 0.8
 
 export type Status = 'LIVE' | 'DELAYED' | 'END-OF-DAY' | 'HISTORICAL' | 'STALE' | 'UNAVAILABLE' | 'DEMO'
@@ -25,6 +25,7 @@ export const WINDOWS: Record<string, number> = { Today: 1, '1 Week': 5, '1 Month
 export const STALE_AFTER: Record<string, { basis: 'asOf' | 'retrievedAt'; hours: number }> = {
   'fx-usd-inr': { basis: 'asOf', hours: 72 },
   'sec-filings': { basis: 'retrievedAt', hours: 36 },
+  'sec-fundamentals': { basis: 'retrievedAt', hours: 72 },
 }
 export const INDIA_COVERAGE = [
   ...['NIFTY 50', 'NIFTY NEXT 50', 'NIFTY 500', 'NIFTY BANK', 'NIFTY IT', 'NIFTY MIDCAP 100'].map(n => ({ n, x: 'NSE', t: 'Index' })),
@@ -35,7 +36,7 @@ export const INDIA_COVERAGE = [
 export const SOURCES = [
   { id: 'demo-fixtures', name: 'DEMO fixture generator', supplies: 'Synthetic series behind every figure in this build', access: 'Bundled with the app (seeded random walk)', delay: 'Not market data', creds: 'None', terms: 'Not applicable (synthetic)', redistribution: 'Not applicable', reviewed: 'Not applicable', issues: 'Must never be presented as market data. Removed from production once live providers exist.', features: 'Nothing on the live site, development builds only (VITE_DEMO=1)' },
   { id: 'market-data', name: 'Indian exchange data (NSE, BSE) through an authorised vendor', supplies: 'Index and equity prices, volume, history', access: 'Not connected', delay: 'Unknown', creds: 'Vendor credentials would be needed, kept in GitHub Actions Secrets', terms: 'Vendor terms (TrueData reviewed): personal or internal use only. Public display needs written approval from the exchanges and the vendor, and public platforms may show delayed data only', redistribution: 'Blocked until licensed', reviewed: '2026-11-07', issues: 'Licensing, not code, is the blocker', features: 'None' },
-  { id: 'sec-edgar', name: 'SEC EDGAR (US filings)', supplies: 'Filing index for US-listed companies: 8-K, 10-Q and 10-K, with links to the original documents', access: 'GitHub Actions snapshot twice a day, data.sec.gov JSON', delay: 'Filings appear as published, then up to one refresh cycle later', creds: 'None. A descriptive User-Agent with a contact email is required', terms: 'SEC fair-access policy, at most 10 requests per second', redistribution: 'Public filings, links to originals kept', reviewed: '2026-11-07', issues: 'US companies only', features: 'The Narrative, What Changed' },
+  { id: 'sec-edgar', name: 'SEC EDGAR (US filings)', supplies: 'Filing index for US-listed companies (8-K, 10-Q, 10-K and amendments) with links to the original documents, and annual XBRL company facts for fundamentals', access: 'GitHub Actions snapshot twice a day, data.sec.gov JSON', delay: 'Filings appear as published, then up to one refresh cycle later', creds: 'None. A descriptive User-Agent with a contact email is required', terms: 'SEC fair-access policy, at most 10 requests per second', redistribution: 'Public filings, links to originals kept', reviewed: '2026-11-07', issues: 'US companies only', features: 'The Narrative, What Changed, US fundamentals' },
   { id: 'frankfurter', name: 'Frankfurter (blended central-bank reference rates)', supplies: 'USD/INR daily rate and five-year history', access: 'GitHub Actions snapshot twice a day, api.frankfurter.dev v2', delay: 'Daily rates, not intraday', creds: 'None', terms: 'Free to use. Blended rates are the provider’s own calculation', redistribution: 'Permitted for blended rates', reviewed: '2026-11-07', issues: 'Daily rates only, and recent decimals can shift as data is revised', features: 'USD/INR panel' },
 ]
 export const LEDGER: { ds: string; src: string; st: Status }[] = [
@@ -85,5 +86,6 @@ export const LIMITATIONS = [
   { id: 'fx', text: 'FX comes from daily reference rates, so there is no intraday or live FX. Cross-currency comparison is not built yet.', affects: 'Comparisons', status: 'Temporary' },
   { id: 'events', text: 'Events are US SEC filings only. Indian filings, news and economic events are not covered, and a filing’s timing is never presented as causation.', affects: 'The Narrative', status: 'Temporary' },
   { id: 'india-prices', text: 'Indian index and equity prices are not available. Authorised NSE and BSE vendors licence data for personal or internal use, and public display needs written approval from the exchanges and the vendor. Nothing is shown rather than anything estimated.', affects: 'Indian market panels', status: 'Blocked by licensing' },
+  { id: 'fundamentals', text: 'Fundamentals are annual 10-K figures only. There are no quarterly or trailing-twelve-month values, total debt is shown as reported long-term debt (noncurrent), and ratios use year-end balances. They are filings, not a price feed.', affects: 'US fundamentals', status: 'Temporary' },
   { id: 'advice', text: 'This platform provides financial information and research, not individualized investment advice.', affects: 'Everything', status: 'Permanent' },
 ]

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { BASKETS, MARKETS, PERIODS, SECTORS, brand } from '../config'
 import { basket, demoSeries, localTime, ret, session } from '../engine'
 import { Chg, SourceLine, Tag } from '../ui'
-import { DEMO, ago, useStatus } from '../data'
+import { ago, useStatus } from '../data'
 import { Changes, Fx } from './Live'
 
 type MK = 'india' | 'us'
@@ -18,10 +18,6 @@ function useNow() {
 export default function Pulse() {
   const now = useNow()
   const st = useStatus()
-  const [mk, setMk] = useState<MK>('india')
-  const [per, setPer] = useState('1 Month')
-  const rows = SECTORS.map(s => ({ s, r: ret(demoSeries(`${mk}:${s}`), per) })).sort((a, b) => (b.r ?? 0) - (a.r ?? 0))
-  const max = Math.max(...rows.map(x => Math.abs(x.r ?? 0)), 1e-4)
   return (
     <>
       <div className="hero">
@@ -44,11 +40,27 @@ export default function Pulse() {
       {!DEMO && (
         <section>
           <h2>Markets</h2>
-          <p className="lede">Index, sector and price panels are not shown because no licensed price source is connected yet. <Link to="/methodology/limitations/no-live-data">Why</Link></p>
+          <p className="lede">Index, sector and price panels are not shown because no licensed price source is connected yet. <Link to="/methodology/limitations/no-live-data">Why</Link> <Link to="/methodology/coverage/india">Indian market coverage</Link></p>
         </section>
       )}
-      {DEMO && (
-        <>
+      {DEMO && <PulseDemo />}
+
+      <section>
+        <h2>Sources and method</h2>
+        <p>USD/INR comes from <Link to="/methodology/sources/frankfurter">Frankfurter</Link> and filings from <Link to="/methodology/sources/sec-edgar">SEC EDGAR</Link>, refreshed on a schedule by GitHub Actions. {DEMO ? 'Synthetic DEMO figures are switched on in this build.' : 'No price panels are shown because no licensed price source is connected.'} <Link to="/methodology">Open Methodology and Data Sources</Link> for the registry, the freshness ledger and known limitations.</p>
+      </section>
+    </>
+  )
+}
+
+// Development only: removed from production builds at compile time.
+function PulseDemo() {
+  const [mk, setMk] = useState<MK>('india')
+  const [per, setPer] = useState('1 Month')
+  const rows = SECTORS.map(s => ({ s, r: ret(demoSeries(`${mk}:${s}`), per) })).sort((a, b) => (b.r ?? 0) - (a.r ?? 0))
+  const max = Math.max(...rows.map(x => Math.abs(x.r ?? 0)), 1e-4)
+  return (
+    <>
       <section>
         <h2>Global Market Pulse</h2>
         <div className="cols">
@@ -108,13 +120,6 @@ export default function Pulse() {
         <p><Link to="/technology">Explore the technology value chain</Link></p>
       </section>
 
-        </>
-      )}
-
-      <section>
-        <h2>Sources and method</h2>
-        <p>USD/INR comes from <Link to="/methodology/sources/frankfurter">Frankfurter</Link> and filings from <Link to="/methodology/sources/sec-edgar">SEC EDGAR</Link>, refreshed on a schedule by GitHub Actions. {DEMO ? 'Synthetic DEMO figures are switched on in this build.' : 'No price panels are shown because no licensed price source is connected.'} <Link to="/methodology">Open Methodology and Data Sources</Link> for the registry, the freshness ledger and known limitations.</p>
-      </section>
     </>
   )
 }

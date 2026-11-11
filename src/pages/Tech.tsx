@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import { BASKETS, LAYERS, PERIODS } from '../config'
 import { basket, ret } from '../engine'
 import { Chg, SourceLine, Spark, Tag } from '../ui'
-import { DEMO } from '../data'
 
 export default function Tech() {
   const [i, setI] = useState(0)

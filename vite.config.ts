@@ -8,5 +8,6 @@ const single = process.env.SINGLE === '1'
 
 export default defineConfig({
   base: single ? './' : repo && !repo.endsWith('.github.io') ? `/${repo}/` : '/',
+  define: { DEMO: JSON.stringify(process.env.VITE_DEMO === '1') },
   plugins: [react(), ...(single ? [viteSingleFile()] : [])],
 })

@@ -22,6 +22,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - run: node --test
       - run: node scripts/fetch-data.mjs
       - name: Commit changes and redeploy
         run: |

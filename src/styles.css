@@ -48,3 +48,8 @@ code{font-family:inherit;background:var(--surface);padding:1px 5px}
 footer{border-top:1px solid var(--line);padding:28px 0;font-size:13px;color:var(--mute);margin-top:40px}
 @media(max-width:760px){.hero,.cols,.meth{grid-template-columns:1fr;gap:28px}.toc{position:static}.bars li{grid-template-columns:110px 1fr 90px}.row{grid-template-columns:1fr auto auto}.row .tag{display:none}.row>:nth-child(3){display:none}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+.menu{display:none}
+select{font:inherit;font-size:14px;color:var(--ink);background:var(--paper);border:1px solid var(--line);padding:6px 8px;border-radius:2px;max-width:100%}
+.filters{display:flex;flex-wrap:wrap;gap:12px;margin:0 0 14px}.filters label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--mute)}
+@media(max-width:760px){.menu{display:inline-block}nav[aria-label=Primary]{display:none;flex-basis:100%}nav[aria-label=Primary].open{display:flex;flex-direction:column;gap:0}nav[aria-label=Primary] a{padding:12px 0}button,select,summary{min-height:44px}.util{flex-wrap:wrap}}

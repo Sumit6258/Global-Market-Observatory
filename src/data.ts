@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react'
-import type { Status } from './config'
+import { STALE_AFTER, type Status } from './config'
 
-// Synthetic figures exist only in development builds made with VITE_DEMO=1.
-export const DEMO = import.meta.env.VITE_DEMO === '1'
+// DEMO is a compile-time constant (vite.config.ts). Synthetic figures exist only in builds made with VITE_DEMO=1.
 
 export interface DS { id: string; name: string; source: string; status: Status; asOf: string | null; retrievedAt: string | null; records: number; note?: string; error?: string; failedAt?: string }
 export interface StatusFile { generatedAt: string; runUrl?: string; datasets: DS[] }
-export interface Filing { ticker: string; company: string; form: string; filed: string; accepted: string; period: string | null; items: string[]; url: string }
+export interface Filing { ticker: string; company: string; cik?: number; accession?: string; form: string; filed: string; accepted: string; period: string | null; items: string[]; url: string }
 export interface FilingsFile { retrievedAt: string; since: string; events: Filing[] }
 
 export function useData<T>(name: string) {
@@ -31,8 +30,25 @@ export const ago = (iso: string | null | undefined) => {
 }
 export const etTime = (iso: string) => new Date(iso).toLocaleString('en-US', { timeZone: 'America/New_York', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZoneName: 'short' })
 
-const ITEMS: Record<string, string> = { '1.01': 'entry into a material agreement', '1.02': 'termination of a material agreement', '2.01': 'completion of an acquisition or disposition', '2.02': 'results of operations and financial condition', '2.03': 'creation of a direct financial obligation', '3.02': 'unregistered sales of equity securities', '5.02': 'departure or appointment of directors or officers', '5.07': 'submission of matters to a shareholder vote', '7.01': 'Regulation FD disclosure', '8.01': 'other events', '9.01': 'financial statements and exhibits' }
-export const itemText = (e: Filing) =>
-  e.form === '8-K' ? (e.items.length ? `Reports: ${e.items.map(i => ITEMS[i] ?? `item ${i}`).join('; ')}.` : 'Current report.')
-    : e.form === '10-K' ? `Annual report${e.period ? ` for the fiscal year ended ${e.period}` : ''}.`
+const ITEMS: Record<string, string> = { '1.01': 'entry into a material agreement', '1.02': 'termination of a material agreement', '1.03': 'bankruptcy or receivership', '2.01': 'completion of an acquisition or disposition', '2.02': 'results of operations and financial condition', '2.03': 'creation of a direct financial obligation', '2.04': 'triggering events that accelerate an obligation', '3.01': 'notice of delisting or listing-standard failure', '3.02': 'unregistered sales of equity securities', '4.01': 'change in certifying accountant', '4.02': 'non-reliance on previously issued financial statements', '5.01': 'change in control', '5.02': 'departure or appointment of directors or officers', '5.03': 'amendment to articles or bylaws', '5.07': 'submission of matters to a shareholder vote', '7.01': 'Regulation FD disclosure', '8.01': 'other events', '9.01': 'financial statements and exhibits' }
+// Categories come only from official 8-K item numbers, never from guesswork.
+const CAT: [string, string[]][] = [['Financial results', ['2.02']], ['Leadership changes', ['5.02']], ['Material agreements', ['1.01', '1.02']], ['Bankruptcy or receivership', ['1.03']], ['Completed acquisitions and disposals', ['2.01']], ['Securities and financing', ['2.03', '2.04', '3.02']], ['Regulatory, listing and accounting', ['3.01', '4.01', '4.02']]]
+export const CATEGORY_NAMES = [...CAT.map(c => c[0]), 'Other disclosures', 'Periodic reports']
+export const categoriesOf = (e: Filing): string[] => {
+  if (!e.form.startsWith('8-K')) return ['Periodic reports']
+  const hit = [...new Set(e.items.map(i => CAT.find(c => c[1].includes(i))?.[0]).filter((x): x is string => !!x))]
+  return hit.length ? hit : ['Other disclosures']
+}
+export const itemText = (e: Filing) => {
+  const base = e.form.startsWith('8-K') ? (e.items.length ? `Reports: ${e.items.map(i => `${i} ${ITEMS[i] ?? 'other item'}`).join('; ')}.` : 'Current report.')
+    : e.form.startsWith('10-K') ? `Annual report${e.period ? ` for the fiscal year ended ${e.period}` : ''}.`
       : `Quarterly report${e.period ? ` for the period ended ${e.period}` : ''}.`
+  return e.form.endsWith('/A') ? `Amendment. ${base}` : base
+}
+
+const hoursSince = (iso: string | null) => (iso ? (Date.now() - (/^\d{4}-\d\d-\d\d$/.test(iso) ? Date.parse(`${iso}T00:00:00Z`) : Date.parse(iso))) / 36e5 : Infinity)
+// A failed refresh or an over-age dataset is shown as STALE, never under its original label.
+export const effStatus = (d: DS): Status => {
+  const r = STALE_AFTER[d.id]
+  return d.error || (r && hoursSince(d[r.basis]) > r.hours) ? 'STALE' : d.status
+}

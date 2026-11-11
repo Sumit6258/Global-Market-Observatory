@@ -1,6 +1,7 @@
 // Refreshes real data into public/data. Runs in GitHub Actions without secrets.
 // A failed source keeps its last good file and is reported in meta/status.json.
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { dedupeFilings, validateFilings, validateFx } from './validate.mjs'
 
 const OUT = 'public/data'
 const CONTACT = process.env.SEC_CONTACT?.trim()
@@ -9,9 +10,16 @@ const sleep = ms => new Promise(r => setTimeout(r, ms))
 const read = async p => { try { return JSON.parse(await readFile(`${OUT}/${p}`, 'utf8')) } catch { return null } }
 const save = (p, d) => writeFile(`${OUT}/${p}`, JSON.stringify(d) + '\n')
 const get = async (url, ua) => {
-  const r = await fetch(url, { headers: { 'User-Agent': ua, Accept: 'application/json' } })
-  if (!r.ok) throw new Error(`HTTP ${r.status} for ${url}`)
-  return r.json()
+  for (let attempt = 1; ; attempt++) {
+    try {
+      const r = await fetch(url, { headers: { 'User-Agent': ua, Accept: 'application/json' } })
+      if (!r.ok) throw new Error(`HTTP ${r.status} for ${url}`)
+      return await r.json()
+    } catch (e) {
+      if (attempt === 3) throw e
+      await sleep(1000 * attempt)
+    }
+  }
 }
 await mkdir(`${OUT}/meta`, { recursive: true })
 const prev = (await read('meta/status.json'))?.datasets ?? []
@@ -35,7 +43,8 @@ await run('fx-usd-inr', 'USD/INR exchange rate', 'frankfurter', 'END-OF-DAY', as
   const j = await get(`https://api.frankfurter.dev/v2/rates?from=${from}&base=USD&quotes=INR`, 'Global-Market-Observatory')
   const rows = Array.isArray(j) ? j.map(x => [x.date, x.rate]) : Object.entries(j.rates ?? {}).map(([d, q]) => [d, q.INR])
   const pts = rows.filter(([d, v]) => /^\d{4}-\d\d-\d\d$/.test(d) && Number.isFinite(v)).sort((a, b) => a[0].localeCompare(b[0]))
-  if (pts.length < 200) throw new Error(`unexpected response (${pts.length} usable points): ${JSON.stringify(j).slice(0, 160)}`)
+  if (!pts.length) throw new Error(`unexpected response: ${JSON.stringify(j).slice(0, 160)}`)
+  validateFx(pts)
   const asOf = pts.at(-1)[0]
   await save('fx.json', { source: 'frankfurter', base: 'USD', quote: 'INR', asOf, retrievedAt: now, dates: pts.map(p => p[0]), values: pts.map(p => p[1]) })
   return { asOf, records: pts.length }
@@ -43,6 +52,7 @@ await run('fx-usd-inr', 'USD/INR exchange rate', 'frankfurter', 'END-OF-DAY', as
 
 // US filings: SEC EDGAR. Needs a declared User-Agent with a contact email and at most 10 requests per second.
 const US = [['MSFT', 'Microsoft'], ['NVDA', 'NVIDIA'], ['GOOGL', 'Alphabet'], ['AMZN', 'Amazon'], ['META', 'Meta'], ['AAPL', 'Apple'], ['ORCL', 'Oracle'], ['ADBE', 'Adobe'], ['CRM', 'Salesforce'], ['NOW', 'ServiceNow'], ['PLTR', 'Palantir'], ['SNOW', 'Snowflake'], ['DDOG', 'Datadog'], ['NET', 'Cloudflare'], ['CRWD', 'CrowdStrike'], ['MDB', 'MongoDB'], ['AVGO', 'Broadcom'], ['AMD', 'AMD'], ['INTC', 'Intel'], ['IBM', 'IBM'], ['CSCO', 'Cisco']]
+const FORMS = ['8-K', '8-K/A', '10-K', '10-K/A', '10-Q', '10-Q/A']
 await run('sec-filings', 'US company filings (8-K, 10-Q, 10-K)', 'sec-edgar', 'HISTORICAL', async () => {
   if (!CONTACT) throw new Error('the SEC_CONTACT_EMAIL repository variable is not set')
   const ua = `Global-Market-Observatory ${CONTACT}`
@@ -57,15 +67,16 @@ await run('sec-filings', 'US company filings (8-K, 10-Q, 10-K)', 'sec-edgar', 'H
       await sleep(150)
       const r = (await get(`https://data.sec.gov/submissions/CIK${String(c.cik_str).padStart(10, '0')}.json`, ua)).filings.recent
       r.form.forEach((form, i) => {
-        if (!['8-K', '10-Q', '10-K'].includes(form) || r.filingDate[i] < since) return
-        events.push({ ticker, company, form, filed: r.filingDate[i], accepted: r.acceptanceDateTime[i], period: r.reportDate[i] || null, items: form === '8-K' ? (r.items[i] || '').split(',').filter(Boolean) : [], url: `https://www.sec.gov/Archives/edgar/data/${c.cik_str}/${r.accessionNumber[i].replaceAll('-', '')}/${r.primaryDocument[i]}` })
+        if (!FORMS.includes(form) || r.filingDate[i] < since) return
+        const accession = r.accessionNumber[i]
+        events.push({ ticker, company, cik: c.cik_str, form, filed: r.filingDate[i], accepted: r.acceptanceDateTime[i], period: r.reportDate[i] || null, items: form.startsWith('8-K') ? (r.items[i] || '').split(',').filter(Boolean) : [], accession, url: `https://www.sec.gov/Archives/edgar/data/${c.cik_str}/${accession.replaceAll('-', '')}/${r.primaryDocument[i]}` })
       })
     } catch (e) { failed.push(ticker); console.warn(`${ticker}: ${e.message}`) }
   }
-  if (failed.length > US.length / 2 || !events.length) throw new Error(`too few companies covered (failed: ${failed.join(', ') || 'none'}, filings found: ${events.length})`)
-  events.sort((a, b) => b.accepted.localeCompare(a.accepted))
-  await save('filings.json', { source: 'sec-edgar', retrievedAt: now, since, events })
-  return { asOf: events[0].accepted, records: events.length, note: `covers ${US.length - failed.length} of ${US.length} companies, last 120 days` }
+  if (failed.length || !events.length) throw new Error(`incomplete refresh, last good data kept (failed: ${failed.join(', ') || 'none'}, filings found: ${events.length})`)
+  const list = validateFilings(dedupeFilings(events))
+  await save('filings.json', { source: 'sec-edgar', retrievedAt: now, since, events: list })
+  return { asOf: list[0].accepted, records: list.length, note: `covers ${US.length} of ${US.length} companies, last 120 days` }
 })
 
 const { GITHUB_SERVER_URL: srv, GITHUB_REPOSITORY: repo, GITHUB_RUN_ID: id } = process.env

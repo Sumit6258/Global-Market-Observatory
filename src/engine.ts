@@ -22,6 +22,18 @@ export function ret(s: Series, p: string): number | null {
   return from < 0 ? null : s.v[last] / s.v[from] - 1
 }
 
+// Calendar-based returns for series that include non-trading days (USD/INR): last observation on or before the target date.
+export function retDate(dates: string[], v: number[], p: string): number | null {
+  const last = dates.length - 1
+  if (last < 1) return null
+  const end = new Date(`${dates[last]}T00:00:00Z`)
+  const back = (days: number, months = 0) => { const t = new Date(end); t.setUTCMonth(t.getUTCMonth() - months); t.setUTCDate(t.getUTCDate() - days); return t.toISOString().slice(0, 10) }
+  const target = ({ Today: back(1), '1 Week': back(7), '1 Month': back(0, 1), '3 Months': back(0, 3), '6 Months': back(0, 6), '1 Year': back(0, 12), YTD: `${end.getUTCFullYear() - 1}-12-31` } as Record<string, string>)[p]
+  if (!target || dates[0] > target) return null
+  for (let i = last; i >= 0; i--) if (dates[i] <= target) return v[last] / v[i] - 1
+  return null
+}
+
 export function basket(members: string[]) {
   const ser = members.map(m => demoSeries('co:' + m, 0.016))
   const coverage = ser.length / members.length

@@ -44,3 +44,9 @@ test('validation rejects a refresh where most companies lack revenue', () => {
   assert.throws(() => validateFundamentals([co(true), co(false), co(false)]), /only 1 of 3/)
   assert.equal(validateFundamentals([co(true), co(true), co(true)]).length, 3)
 })
+
+test('falls back to the productive-assets capex concept', () => {
+  const r = extract(facts({ Revenues: [flow('2024-09-30', 1000)], PaymentsToAcquireProductiveAssets: [flow('2024-09-30', 50)] }))
+  assert.equal(r.metrics.capex, 50)
+  assert.equal(r.concepts.capex, 'PaymentsToAcquireProductiveAssets')
+})

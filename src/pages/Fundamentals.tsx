@@ -2,9 +2,9 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ago, useData, type FundCo, type FundFile } from '../data'
 
-const money = (v: number) => (Math.abs(v) >= 1e9 ? `$${(v / 1e9).toFixed(2)}B` : `$${(v / 1e6).toFixed(0)}M`)
+const money = (v: number) => `${v < 0 ? '−' : ''}$${Math.abs(v) >= 1e9 ? `${(Math.abs(v) / 1e9).toFixed(2)}B` : `${(Math.abs(v) / 1e6).toFixed(0)}M`}`
 const show = (v: number | null | undefined, kind: string) =>
-  v == null ? 'n/a' : kind === 'usd' ? money(v) : kind === 'eps' ? `$${v.toFixed(2)}` : kind === 'pct' ? `${v < 0 ? '−' : ''}${Math.abs(v * 100).toFixed(1)}%` : v.toFixed(2)
+  v == null ? 'n/a' : kind === 'usd' ? money(v) : kind === 'eps' ? `${v < 0 ? '−' : ''}$${Math.abs(v).toFixed(2)}` : kind === 'pct' ? `${v < 0 ? '−' : ''}${Math.abs(v * 100).toFixed(1)}%` : v.toFixed(2)
 const val = (c: FundCo, k: string) => c.derived[k] ?? c.metrics[k] ?? null
 const COLS: [string, string][] = [['revenue', 'Revenue'], ['revenueGrowth', 'Revenue growth'], ['operatingMargin', 'Operating margin'], ['netIncome', 'Net income'], ['freeCashFlow', 'Free cash flow'], ['longTermDebt', 'Long-term debt']]
 
@@ -27,7 +27,7 @@ export default function Fundamentals() {
               <tr key={c.ticker}>
                 <td>{c.company} ({c.ticker})</td><td>US</td><td>{c.fiscalYearEnd}</td>
                 {COLS.map(([k]) => <td key={k}>{show(val(c, k), kind(k))}</td>)}
-                <td><a href={`https://www.sec.gov/Archives/edgar/data/${c.cik}/${c.accession.replace(/-/g, '')}/${c.accession}-index.htm`}>{c.filed}</a></td>
+                <td className="nw"><a href={`https://www.sec.gov/Archives/edgar/data/${c.cik}/${c.accession.replace(/-/g, '')}/${c.accession}-index.htm`}>{c.filed}</a></td>
               </tr>
             ))}
           </tbody>

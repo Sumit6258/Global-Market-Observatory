@@ -4,26 +4,26 @@ const IS = 'Income statement', BS = 'Balance sheet', CF = 'Cash flow statement'
 const m = (key, label, group, concepts, o = {}) => ({ key, label, group, kind: 'usd', concepts, ...o })
 
 export const METRICS = [
-  m('revenue', 'Revenue', IS, ['RevenueFromContractWithCustomerExcludingAssessedTax', 'Revenues', 'SalesRevenueNet']),
+  m('revenue', 'Revenue', IS, ['RevenueFromContractWithCustomerExcludingAssessedTax', 'Revenues', 'SalesRevenueNet', 'RevenueFromContractWithCustomerIncludingAssessedTax']),
   m('costOfRevenue', 'Cost of revenue', IS, ['CostOfRevenue', 'CostOfGoodsAndServicesSold', 'CostOfGoodsSold']),
   m('grossProfit', 'Gross profit', IS, ['GrossProfit']),
   m('operatingExpenses', 'Operating expenses', IS, ['OperatingExpenses']),
   m('rnd', 'Research and development', IS, ['ResearchAndDevelopmentExpense']),
   m('sga', 'Selling, general and administrative', IS, ['SellingGeneralAndAdministrativeExpense']),
   m('operatingIncome', 'Operating income', IS, ['OperatingIncomeLoss']),
-  m('netIncome', 'Net income', IS, ['NetIncomeLoss']),
+  m('netIncome', 'Net income', IS, ['NetIncomeLoss', 'ProfitLoss']),
   m('epsBasic', 'Basic EPS', IS, ['EarningsPerShareBasic'], { kind: 'eps', unit: 'USD/shares' }),
   m('epsDiluted', 'Diluted EPS', IS, ['EarningsPerShareDiluted'], { kind: 'eps', unit: 'USD/shares' }),
   m('cash', 'Cash and cash equivalents', BS, ['CashAndCashEquivalentsAtCarryingValue'], { stock: true }),
-  m('shortTermInvestments', 'Short-term investments', BS, ['ShortTermInvestments', 'MarketableSecuritiesCurrent'], { stock: true }),
+  m('shortTermInvestments', 'Short-term investments', BS, ['ShortTermInvestments', 'MarketableSecuritiesCurrent', 'AvailableForSaleSecuritiesDebtSecuritiesCurrent'], { stock: true }),
   m('currentAssets', 'Total current assets', BS, ['AssetsCurrent'], { stock: true }),
   m('totalAssets', 'Total assets', BS, ['Assets'], { stock: true }),
   m('currentLiabilities', 'Current liabilities', BS, ['LiabilitiesCurrent'], { stock: true }),
   m('totalLiabilities', 'Total liabilities', BS, ['Liabilities'], { stock: true }),
   m('longTermDebt', 'Long-term debt (noncurrent)', BS, ['LongTermDebtNoncurrent'], { stock: true }),
-  m('equity', 'Stockholders’ equity', BS, ['StockholdersEquity'], { stock: true }),
+  m('equity', 'Stockholders’ equity', BS, ['StockholdersEquity', 'StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest'], { stock: true }),
   m('operatingCashFlow', 'Operating cash flow', CF, ['NetCashProvidedByUsedInOperatingActivities']),
-  m('capex', 'Capital expenditure', CF, ['PaymentsToAcquirePropertyPlantAndEquipment']),
+  m('capex', 'Capital expenditure', CF, ['PaymentsToAcquirePropertyPlantAndEquipment', 'PaymentsToAcquireProductiveAssets']),
   m('investingCashFlow', 'Investing cash flow', CF, ['NetCashProvidedByUsedInInvestingActivities']),
   m('financingCashFlow', 'Financing cash flow', CF, ['NetCashProvidedByUsedInFinancingActivities']),
 ]
@@ -102,4 +102,15 @@ export function validateFundamentals(list) {
   if (ok < Math.ceil(list.length * 0.8)) throw new Error(`only ${ok} of ${list.length} companies have revenue and net income`)
   for (const c of list) for (const [k, v] of Object.entries({ ...c.metrics, ...c.derived })) if (v !== null && !Number.isFinite(v)) throw new Error(`${c.ticker}: ${k} is not a number`)
   return list
+}
+
+// Lists revenue-like concepts and their 10-K coverage, to explain why a company could not be mapped.
+export function diagnose(cf) {
+  const gaap = cf?.facts?.['us-gaap'] ?? {}
+  return Object.entries(gaap).filter(([k]) => /revenue|sales/i.test(k)).slice(0, 12).map(([concept, v]) => {
+    const rows = Object.values(v.units ?? {}).flat()
+    const tenK = rows.filter(r => r.form?.startsWith('10-K'))
+    const s = tenK[0]
+    return { concept, rows: rows.length, tenK: tenK.length, latestEnd: tenK.map(r => r.end).sort().at(-1) ?? null, sample: s ? { start: s.start ?? null, end: s.end, form: s.form } : null }
+  })
 }

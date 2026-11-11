@@ -2,7 +2,7 @@
 // A failed source keeps its last good file and is reported in meta/status.json.
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dedupeFilings, validateFilings, validateFx } from './validate.mjs'
-import { SCHEMA, extract, validateFundamentals } from './fundamentals.mjs'
+import { SCHEMA, diagnose, extract, validateFundamentals } from './fundamentals.mjs'
 
 const OUT = 'public/data'
 const CONTACT = process.env.SEC_CONTACT?.trim()
@@ -85,18 +85,19 @@ await run('sec-fundamentals', 'US annual fundamentals (10-K, XBRL)', 'sec-edgar'
   if (!CONTACT) throw new Error('the SEC_CONTACT_EMAIL repository variable is not set')
   const ua = `Global-Market-Observatory ${CONTACT}`
   const byTicker = new Map(Object.values(await get('https://www.sec.gov/files/company_tickers.json', ua)).map(c => [c.ticker, c]))
-  const companies = [], unmapped = []
+  const companies = [], unmapped = [], diagnostics = {}
   for (const [ticker, company] of US) {
     const c = byTicker.get(ticker)
     if (!c) throw new Error(`no CIK for ${ticker}, last good data kept`)
     await sleep(150)
-    const x = extract(await get(`https://data.sec.gov/api/xbrl/companyfacts/CIK${String(c.cik_str).padStart(10, '0')}.json`, ua))
-    if (!x) { unmapped.push(ticker); console.warn(`${ticker}: no annual revenue found`); continue }
+    const facts = await get(`https://data.sec.gov/api/xbrl/companyfacts/CIK${String(c.cik_str).padStart(10, '0')}.json`, ua)
+    const x = extract(facts)
+    if (!x) { unmapped.push(ticker); diagnostics[ticker] = diagnose(facts); console.warn(`${ticker}: no annual revenue found`, JSON.stringify(diagnostics[ticker])); continue }
     companies.push({ ticker, company, cik: c.cik_str, ...x })
     console.log(`${ticker}: FY ended ${x.fiscalYearEnd}, filed ${x.filed}, revenue ${x.metrics.revenue}, net income ${x.metrics.netIncome}, missing: ${x.missing.join(', ') || 'none'}`)
   }
   validateFundamentals(companies)
-  await save('fundamentals.json', { source: 'sec-edgar', retrievedAt: now, schema: SCHEMA, unmapped, companies })
+  await save('fundamentals.json', { source: 'sec-edgar', retrievedAt: now, schema: SCHEMA, unmapped, diagnostics, companies })
   return { asOf: companies.map(c => c.filed).sort().at(-1), records: companies.length, note: `latest 10-K per company, covers ${companies.length} of ${US.length}${unmapped.length ? `, no annual revenue found for ${unmapped.join(', ')}` : ''}` }
 })
 

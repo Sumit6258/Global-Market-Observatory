@@ -56,3 +56,16 @@ select{font:inherit;font-size:14px;color:var(--ink);background:var(--paper);bord
 
 .meth>article{min-width:0}
 .nw{white-space:nowrap}
+input[type=search]{font:inherit;font-size:14px;color:var(--ink);background:var(--paper);border:1px solid var(--line);padding:6px 8px;border-radius:2px;max-width:100%;min-width:0}
+.crumbs{font-size:13px;color:var(--mute);margin-bottom:16px}
+.facts{margin:12px 0}.fact{display:grid;grid-template-columns:minmax(0,210px) minmax(0,1fr);gap:0 24px;padding:8px 0;border-bottom:1px solid var(--line)}.fact dt{color:var(--mute)}.fact dd{margin:0;overflow-wrap:anywhere}
+.stmt th:first-child,.stmt td:first-child{position:sticky;left:0;background:var(--paper)}
+.stmt th{vertical-align:bottom;white-space:nowrap}
+.charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:28px;margin:16px 0}
+.chart{margin:0}.chart figcaption{font-weight:600;margin-bottom:4px}
+.chart .pos{fill:var(--cobalt)}.chart .neg{fill:var(--neg)}.chart .ln{fill:none;stroke:var(--cobalt);stroke-width:2}.chart circle{fill:var(--cobalt)}
+.chart text{font-size:10px;fill:var(--ink)}.chart .mt{fill:var(--mute)}.chart .axis{stroke:var(--line)}
+@media(max-width:760px){.fact{grid-template-columns:minmax(0,1fr);gap:0}}
+.filters label{min-width:0;max-width:100%;flex:1 1 180px}.filters select,.filters input{width:100%}
+@media(max-width:760px){input[type=search]{min-height:44px}}
+@media(max-width:760px){.stmt th:first-child,.stmt td:first-child{max-width:128px;min-width:0;white-space:normal;font-size:13px;padding:8px 6px}.stmt td,.stmt th{padding:8px 8px}}

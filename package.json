@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "test": "node --test"
+    "test": "node --test scripts/*.test.mjs && vitest run src"
   },
   "dependencies": {
     "react": "^19.3.1",
@@ -20,6 +20,7 @@
     "@vitejs/plugin-react": "^4.7.0",
     "typescript": "^7.0.2",
     "vite": "^5.4.21",
-    "vite-plugin-singlefile": "^2.3.4"
+    "vite-plugin-singlefile": "^2.3.4",
+    "vitest": "^2.1.9"
   }
 }

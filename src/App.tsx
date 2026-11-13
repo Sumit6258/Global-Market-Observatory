@@ -7,6 +7,8 @@ import Pulse from './pages/Pulse'
 import Tech from './pages/Tech'
 import Narrative from './pages/Narrative'
 import Methodology from './pages/Methodology'
+import Companies from './pages/Companies'
+import Company from './pages/Company'
 
 // Hash routing keeps direct refreshes working on GitHub Pages. The single-file preview uses in-memory routing.
 const R = ({ children }: { children: ReactNode }) => (import.meta.env.VITE_PREVIEW ? <MemoryRouter>{children}</MemoryRouter> : <HashRouter>{children}</HashRouter>)
@@ -34,6 +36,7 @@ function Shell({ children }: { children: ReactNode }) {
             <NavLink to="/" end>The Pulse</NavLink>
             <NavLink to="/technology">Technology and AI</NavLink>
             <NavLink to="/narrative">The Narrative</NavLink>
+            <NavLink to="/companies">Companies</NavLink>
           </nav>
           <div className="util">
             <Link to="/methodology">Methodology</Link>
@@ -67,6 +70,8 @@ export default function App() {
           <Route path="/" element={<Pulse />} />
           <Route path="/technology" element={<Tech />} />
           <Route path="/narrative" element={<Narrative />} />
+          <Route path="/companies" element={<Companies />} />
+          <Route path="/company/:ticker" element={<Company />} />
           <Route path="/methodology" element={<Methodology />} />
           <Route path="/methodology/:kind/:id" element={<Methodology />} />
           <Route path="*" element={<Navigate to="/" replace />} />

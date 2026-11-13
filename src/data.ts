@@ -9,7 +9,10 @@ export interface Filing { ticker: string; company: string; cik?: number; accessi
 export interface FilingsFile { retrievedAt: string; since: string; events: Filing[] }
 
 export interface FundMetric { key: string; label: string; group: string; kind: string; concepts?: string[]; formula?: string }
-export interface FundCo { ticker: string; company: string; cik: number; fiscalYearEnd: string; filed: string; accession: string; metrics: Record<string, number | null>; derived: Record<string, number | null>; concepts: Record<string, string>; missing: string[] }
+export interface FundCo { ticker: string; company: string; cik: number; fiscalYearEnd: string; filed: string; accession: string; metrics: Record<string, number | null>; derived: Record<string, number | null>; concepts: Record<string, string>; missing: string[]; history?: FundYear[] }
+export interface FundYear { fiscalYearEnd: string; filed: string; accession: string; metrics: Record<string, number | null>; derived: Record<string, number | null> }
+export interface Profile { ticker: string; company: string; cik: number; name: string; exchanges: string[]; industry: string | null; sic: string | null; website: string | null; fiscalYearEnd: string | null; country: string | null; state: string | null }
+export interface CompaniesFile { retrievedAt: string; companies: Profile[] }
 export interface FundFile { retrievedAt: string; schema: FundMetric[]; unmapped: string[]; companies: FundCo[] }
 
 export function useData<T>(name: string) {

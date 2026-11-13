@@ -50,3 +50,16 @@ test('falls back to the productive-assets capex concept', () => {
   assert.equal(r.metrics.capex, 50)
   assert.equal(r.concepts.capex, 'PaymentsToAcquireProductiveAssets')
 })
+
+test('history lists consecutive fiscal years and stops at a gap', () => {
+  const r = extract(facts({ Revenues: [flow('2024-09-30', 1000), flow('2023-09-30', 800), flow('2022-09-30', 700), flow('2019-09-30', 300)] }))
+  assert.deepEqual(r.history.map(h => h.fiscalYearEnd), ['2024-09-30', '2023-09-30', '2022-09-30'])
+  assert.equal(r.history[0].derived.revenueGrowth, 0.25)
+  assert.ok(Math.abs(r.history[1].derived.revenueGrowth - 100 / 700) < 1e-9)
+  assert.equal(r.history[2].derived.revenueGrowth, null)
+})
+test('each historical year keeps its own metrics', () => {
+  const r = extract(facts({ Revenues: [flow('2024-09-30', 1000), flow('2023-09-30', 800)], NetIncomeLoss: [flow('2024-09-30', 100)] }))
+  assert.equal(r.history[0].metrics.netIncome, 100)
+  assert.equal(r.history[1].metrics.netIncome, null)
+})

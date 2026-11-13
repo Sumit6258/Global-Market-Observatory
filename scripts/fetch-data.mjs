@@ -53,6 +53,7 @@ await run('fx-usd-inr', 'USD/INR exchange rate', 'frankfurter', 'END-OF-DAY', as
 
 // US filings: SEC EDGAR. Needs a declared User-Agent with a contact email and at most 10 requests per second.
 const US = [['MSFT', 'Microsoft'], ['NVDA', 'NVIDIA'], ['GOOGL', 'Alphabet'], ['AMZN', 'Amazon'], ['META', 'Meta'], ['AAPL', 'Apple'], ['ORCL', 'Oracle'], ['ADBE', 'Adobe'], ['CRM', 'Salesforce'], ['NOW', 'ServiceNow'], ['PLTR', 'Palantir'], ['SNOW', 'Snowflake'], ['DDOG', 'Datadog'], ['NET', 'Cloudflare'], ['CRWD', 'CrowdStrike'], ['MDB', 'MongoDB'], ['AVGO', 'Broadcom'], ['AMD', 'AMD'], ['INTC', 'Intel'], ['IBM', 'IBM'], ['CSCO', 'Cisco']]
+const STATES = new Set('AL AK AZ AR CA CO CT DE DC FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY'.split(' '))
 const FORMS = ['8-K', '8-K/A', '10-K', '10-K/A', '10-Q', '10-Q/A']
 await run('sec-filings', 'US company filings (8-K, 10-Q, 10-K)', 'sec-edgar', 'HISTORICAL', async () => {
   if (!CONTACT) throw new Error('the SEC_CONTACT_EMAIL repository variable is not set')
@@ -60,13 +61,17 @@ await run('sec-filings', 'US company filings (8-K, 10-Q, 10-K)', 'sec-edgar', 'H
   const map = await get('https://www.sec.gov/files/company_tickers.json', ua)
   const byTicker = new Map(Object.values(map).map(c => [c.ticker, c]))
   const since = new Date(Date.now() - 120 * 864e5).toISOString().slice(0, 10)
-  const events = [], failed = []
+  const events = [], failed = [], profiles = []
   for (const [ticker, company] of US) {
     const c = byTicker.get(ticker)
     if (!c) { failed.push(ticker); continue }
     try {
       await sleep(150)
-      const r = (await get(`https://data.sec.gov/submissions/CIK${String(c.cik_str).padStart(10, '0')}.json`, ua)).filings.recent
+      const sub = await get(`https://data.sec.gov/submissions/CIK${String(c.cik_str).padStart(10, '0')}.json`, ua)
+      if (!sub.name) throw new Error('no company name in submissions')
+      const biz = sub.addresses?.business?.stateOrCountry || null
+      profiles.push({ ticker, company, cik: c.cik_str, name: sub.name, exchanges: sub.exchanges ?? [], industry: sub.sicDescription || null, sic: sub.sic || null, website: sub.website || null, fiscalYearEnd: sub.fiscalYearEnd || null, country: STATES.has(biz) ? 'United States' : null, state: biz })
+      const r = sub.filings.recent
       r.form.forEach((form, i) => {
         if (!FORMS.includes(form) || r.filingDate[i] < since) return
         const accession = r.accessionNumber[i]
@@ -76,8 +81,9 @@ await run('sec-filings', 'US company filings (8-K, 10-Q, 10-K)', 'sec-edgar', 'H
   }
   if (failed.length || !events.length) throw new Error(`incomplete refresh, last good data kept (failed: ${failed.join(', ') || 'none'}, filings found: ${events.length})`)
   const list = validateFilings(dedupeFilings(events))
+  await save('companies.json', { source: 'sec-edgar', retrievedAt: now, companies: profiles })
   await save('filings.json', { source: 'sec-edgar', retrievedAt: now, since, events: list })
-  return { asOf: list[0].accepted, records: list.length, note: `covers ${US.length} of ${US.length} companies, last 120 days` }
+  return { asOf: list[0].accepted, records: list.length, note: `covers ${US.length} of ${US.length} companies, last 120 days, company profiles for ${profiles.length}` }
 })
 
 // US annual fundamentals: SEC XBRL company facts, latest 10-K per company. A transport failure keeps the last good file.

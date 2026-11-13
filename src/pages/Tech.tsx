@@ -4,10 +4,15 @@ import { BASKETS, LAYERS, PERIODS } from '../config'
 import { basket, ret } from '../engine'
 import { Chg, SourceLine, Spark, Tag } from '../ui'
 import Fundamentals from './Fundamentals'
+import { useData, type CompaniesFile, type FundFile } from '../data'
+import { companyPath } from '../lib/statement'
 
 export default function Tech() {
   const [i, setI] = useState(0)
   const L = LAYERS[i]
+  const prof = useData<CompaniesFile>('companies.json').data
+  const fund = useData<FundFile>('fundamentals.json').data
+  const name = (n: string) => { const t = prof?.companies.find(x => x.company === n)?.ticker ?? fund?.companies.find(x => x.company === n)?.ticker; return t ? <Link to={companyPath(t)}>{n}</Link> : n }
   return (
     <>
       <section className="first">
@@ -21,7 +26,7 @@ export default function Tech() {
           <div className="tbl">
             <table>
               <thead><tr><th>Company</th><th>Market</th><th>Role in this layer</th><th>Price data</th></tr></thead>
-              <tbody>{L.roster.map(c => <tr key={c.n + c.role}><td>{c.n}</td><td>{c.m}</td><td>{c.role}</td><td><Tag s="UNAVAILABLE" /></td></tr>)}</tbody>
+              <tbody>{L.roster.map(c => <tr key={c.n + c.role}><td>{name(c.n)}</td><td>{c.m}</td><td>{c.role}</td><td><Tag s="UNAVAILABLE" /></td></tr>)}</tbody>
             </table>
           </div>
         ) : <p>No publicly listed businesses are assigned to this layer yet.</p>}

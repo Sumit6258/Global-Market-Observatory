@@ -76,13 +76,12 @@ export function derive(v, prior = {}) {
   }
 }
 
-// Every metric is taken from the same fiscal year as revenue. An item missing for that year stays missing.
-export function extract(cf) {
-  const gaap = cf?.facts?.['us-gaap'] ?? {}
-  const maps = Object.fromEntries(METRICS.map(x => [x.key, x.concepts.map(c => ({ c, by: annual(gaap[c]?.units?.[x.unit ?? 'USD'] ?? [], !!x.stock) }))]))
-  const ends = maps.revenue.map(s => [...s.by.keys()].sort().at(-1)).filter(Boolean)
-  if (!ends.length) return null
-  const end = ends.sort().at(-1)
+function buildMaps(gaap) {
+  return Object.fromEntries(METRICS.map(x => [x.key, x.concepts.map(c => ({ c, by: annual(gaap[c]?.units?.[x.unit ?? 'USD'] ?? [], !!x.stock) }))]))
+}
+
+// One fiscal year. Every metric is taken from the same year as revenue, and an item missing for that year stays missing.
+function at(maps, end) {
   const metrics = {}, concepts = {}, missing = [], entry = {}
   for (const x of METRICS) {
     const hit = maps[x.key].find(s => s.by.has(end))
@@ -95,6 +94,21 @@ export function extract(cf) {
     prior[k] = e ? e.val : null
   }
   return { fiscalYearEnd: end, filed: entry.revenue.filed, accession: entry.revenue.accn, metrics, concepts, prior, derived: derive(metrics, prior), missing }
+}
+
+// The latest fiscal year plus up to years - 1 earlier consecutive years. A gap in the revenue history ends the series.
+export function extract(cf, years = 6) {
+  const maps = buildMaps(cf?.facts?.['us-gaap'] ?? {})
+  const all = [...new Set(maps.revenue.flatMap(s => [...s.by.keys()]))].sort().reverse()
+  if (!all.length) return null
+  const ends = [all[0]]
+  for (const e of all.slice(1)) {
+    const n = days(e, ends.at(-1))
+    if (ends.length >= years || n < 350 || n > 380) break
+    ends.push(e)
+  }
+  const list = ends.map(e => at(maps, e))
+  return { ...list[0], history: list.map(({ fiscalYearEnd, filed, accession, metrics, derived }) => ({ fiscalYearEnd, filed, accession, metrics, derived })) }
 }
 
 export function validateFundamentals(list) {

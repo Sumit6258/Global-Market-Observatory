@@ -8,6 +8,7 @@ import Tech from './pages/Tech'
 import Narrative from './pages/Narrative'
 import Methodology from './pages/Methodology'
 import Companies from './pages/Companies'
+import Ecosystem from './pages/Ecosystem'
 import Company from './pages/Company'
 
 // Hash routing keeps direct refreshes working on GitHub Pages. The single-file preview uses in-memory routing.
@@ -35,6 +36,7 @@ function Shell({ children }: { children: ReactNode }) {
           <nav id="nav" aria-label="Primary" className={open ? 'open' : ''} onClick={() => setOpen(false)}>
             <NavLink to="/" end>The Pulse</NavLink>
             <NavLink to="/technology">Technology and AI</NavLink>
+            <NavLink to="/technology-ecosystem">Ecosystem</NavLink>
             <NavLink to="/narrative">The Narrative</NavLink>
             <NavLink to="/companies">Companies</NavLink>
           </nav>
@@ -69,6 +71,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Pulse />} />
           <Route path="/technology" element={<Tech />} />
+          <Route path="/technology-ecosystem/*" element={<Ecosystem />} />
           <Route path="/narrative" element={<Narrative />} />
           <Route path="/companies" element={<Companies />} />
           <Route path="/company/:ticker" element={<Company />} />

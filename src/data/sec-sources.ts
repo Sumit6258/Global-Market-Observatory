@@ -1,0 +1,25 @@
+// Generated from the real SEC fundamentals file on 2026-11-13: the latest 10-K filing index of each company in the SEC pipeline.
+// Regenerate when new 10-Ks are filed. These are evidence sources for the ecosystem registry, not data.
+export const K: Record<string, string> = {
+  MSFT: 'https://www.sec.gov/Archives/edgar/data/789019/000119312526323660/0001193125-26-323660-index.htm',
+  NVDA: 'https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/0001045810-26-000021-index.htm',
+  GOOGL: 'https://www.sec.gov/Archives/edgar/data/1652044/000165204426000018/0001652044-26-000018-index.htm',
+  AMZN: 'https://www.sec.gov/Archives/edgar/data/1018724/000101872426000004/0001018724-26-000004-index.htm',
+  META: 'https://www.sec.gov/Archives/edgar/data/1326801/000162828026003942/0001628280-26-003942-index.htm',
+  AAPL: 'https://www.sec.gov/Archives/edgar/data/320193/000032019326000026/0000320193-26-000026-index.htm',
+  ORCL: 'https://www.sec.gov/Archives/edgar/data/1341439/000119312526277521/0001193125-26-277521-index.htm',
+  ADBE: 'https://www.sec.gov/Archives/edgar/data/796343/000079634326000003/0000796343-26-000003-index.htm',
+  CRM: 'https://www.sec.gov/Archives/edgar/data/1108524/000110852426000060/0001108524-26-000060-index.htm',
+  NOW: 'https://www.sec.gov/Archives/edgar/data/1373715/000137371526000007/0001373715-26-000007-index.htm',
+  PLTR: 'https://www.sec.gov/Archives/edgar/data/1321655/000132165526000011/0001321655-26-000011-index.htm',
+  SNOW: 'https://www.sec.gov/Archives/edgar/data/1640147/000164014726000008/0001640147-26-000008-index.htm',
+  DDOG: 'https://www.sec.gov/Archives/edgar/data/1561550/000162828026008819/0001628280-26-008819-index.htm',
+  NET: 'https://www.sec.gov/Archives/edgar/data/1477333/000147733326000016/0001477333-26-000016-index.htm',
+  CRWD: 'https://www.sec.gov/Archives/edgar/data/1535527/000153552726000010/0001535527-26-000010-index.htm',
+  MDB: 'https://www.sec.gov/Archives/edgar/data/1441816/000162828026016799/0001628280-26-016799-index.htm',
+  AVGO: 'https://www.sec.gov/Archives/edgar/data/1730168/000173016825000121/0001730168-25-000121-index.htm',
+  AMD: 'https://www.sec.gov/Archives/edgar/data/2488/000000248826000018/0000002488-26-000018-index.htm',
+  INTC: 'https://www.sec.gov/Archives/edgar/data/50863/000005086326000011/0000050863-26-000011-index.htm',
+  IBM: 'https://www.sec.gov/Archives/edgar/data/51143/000005114326000010/0000051143-26-000010-index.htm',
+  CSCO: 'https://www.sec.gov/Archives/edgar/data/858877/000085887726000132/0000858877-26-000132-index.htm',
+}

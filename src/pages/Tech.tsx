@@ -1,36 +1,21 @@
-import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { BASKETS, LAYERS, PERIODS } from '../config'
+import { BASKETS, PERIODS } from '../config'
 import { basket, ret } from '../engine'
 import { Chg, SourceLine, Spark, Tag } from '../ui'
 import Fundamentals from './Fundamentals'
-import { useData, type CompaniesFile, type FundFile } from '../data'
-import { companyPath } from '../lib/statement'
+import { LAYERS } from '../data/technology-ecosystem'
+import { registryStats } from '../lib/ecosystem'
 
 export default function Tech() {
-  const [i, setI] = useState(0)
-  const L = LAYERS[i]
-  const prof = useData<CompaniesFile>('companies.json').data
-  const fund = useData<FundFile>('fundamentals.json').data
-  const name = (n: string) => { const t = prof?.companies.find(x => x.company === n)?.ticker ?? fund?.companies.find(x => x.company === n)?.ticker; return t ? <Link to={companyPath(t)}>{n}</Link> : n }
+  const s = registryStats()
   return (
     <>
       <section className="first">
         <h1>Technology and AI Intelligence</h1>
-        <p className="lede">The technology economy by economic role. Rosters are a draft classification from the product brief; no classification dataset is connected yet. <Link to="/methodology/coverage/matrix">See coverage</Link>.</p>
-        <div className="seg" role="group" aria-label="Value-chain layer">
-          {LAYERS.map((l, k) => <button key={l.name} aria-pressed={i === k} onClick={() => setI(k)}>{k + 1}. {l.name}</button>)}
-        </div>
-        <p className="mute">{L.cats.join(', ')}</p>
-        {L.roster.length ? (
-          <div className="tbl">
-            <table>
-              <thead><tr><th>Company</th><th>Market</th><th>Role in this layer</th><th>Price data</th></tr></thead>
-              <tbody>{L.roster.map(c => <tr key={c.n + c.role}><td>{name(c.n)}</td><td>{c.m}</td><td>{c.role}</td><td><Tag s="UNAVAILABLE" /></td></tr>)}</tbody>
-            </table>
-          </div>
-        ) : <p>No publicly listed businesses are assigned to this layer yet.</p>}
-        {L.contextual && <p className="note">Private organizations, shown for context only and never in price tables: {L.contextual.join(', ')}.</p>}
+        <p className="lede">The technology economy by economic role, from chips to services. Explore how the seven layers connect, who operates in each, and open a company’s research page.</p>
+        <p><Link className="cta" to="/technology-ecosystem">Open the Technology and AI ecosystem</Link></p>
+        <ol className="plain">{LAYERS.map(l => <li key={l.n}>{l.n}. {l.name}</li>)}</ol>
+        <p className="note">{s.entities} entities and {s.relations} relationships. Sources are identified for each, but {s.entities - s.checked} entities have not been checked against them. <Link to="/methodology/coverage/matrix">See coverage</Link></p>
       </section>
 
       <Fundamentals />

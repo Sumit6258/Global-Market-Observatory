@@ -4,6 +4,8 @@ import { Chart } from '../lib/charts'
 import { STATEMENTS, edgarCompanyUrl, filingUrl, fiscalYearEndLabel, seriesOf, shortUsd, show, statementRows, yearsOf, type Statement } from '../lib/statement'
 import { ago, categoriesOf, effStatus, etTime, itemText, useData, useStatus, type CompaniesFile, type FilingsFile, type FundFile } from '../data'
 import { Tag } from '../ui'
+import { ENTITIES } from '../data/technology-ecosystem'
+import { category } from '../lib/ecosystem'
 
 const FILTERS = ['All', '8-K', '10-Q', '10-K', 'Amendments']
 const href = (w: string) => (/^https?:\/\//i.test(w) ? w : `https://${w}`)
@@ -34,6 +36,7 @@ export default function Company() {
   const rows = co && fund.data ? statementRows(fund.data.schema, ys, tab) : []
   const events = (fil.data?.events ?? []).filter(e => e.ticker === T && (flt === 'All' || (flt === 'Amendments' ? e.form.endsWith('/A') : e.form === flt)))
   const ds = st?.datasets.find(d => d.id === 'sec-fundamentals')
+  const eco = ENTITIES.find(x => x.research === T)
   const facts: [string, ReactNode][] = [
     ['Ticker', T], ['SEC registrant name', pr?.name ?? 'Not provided'], ['CIK', cik ?? 'Not provided'],
     ['Exchange', pr?.exchanges.join(', ') || 'Not provided'],
@@ -41,6 +44,7 @@ export default function Company() {
     ['Industry (SEC SIC)', pr?.industry ? `${pr.industry}${pr.sic ? `, SIC ${pr.sic}` : ''}` : 'Not provided'],
     ['Fiscal year end', fiscalYearEndLabel(pr?.fiscalYearEnd) ?? 'Not provided'],
     ['Website', pr?.website ? <a href={href(pr.website)} rel="noopener noreferrer">{pr.website}</a> : 'Not provided by the SEC data'],
+    ['Technology ecosystem', eco ? <><Link to={`/technology-ecosystem/${eco.id}`}>Open in the ecosystem map</Link>: {eco.memberships.map(m => category(m.cat)?.name).join(', ')}</> : 'Not in the ecosystem registry'],
     ['Business description', 'Not shown. The SEC data in use has no verified description text.'],
   ]
   const chart = (title: string, key: string, from: 'metrics' | 'derived', kind: 'bar' | 'line', fmt: (v: number) => string) =>

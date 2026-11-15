@@ -1,8 +1,9 @@
 import { useEffect } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { BASKETS, INDIA_COVERAGE, LAYERS, LEDGER, LIMITATIONS, MARKETS, METRICS, MIN_COVERAGE, REVIEWED, SOURCES, STATUS_RULES, type Status } from '../config'
+import { BASKETS, INDIA_COVERAGE, LEDGER, LIMITATIONS, MARKETS, METRICS, MIN_COVERAGE, REVIEWED, SOURCES, STATUS_RULES, type Status } from '../config'
 import { basket, hm, pct } from '../engine'
 import { Tag } from '../ui'
+import { registryStats } from '../lib/ecosystem'
 import { ago, effStatus, useData, useStatus, type FundFile } from '../data'
 
 const repo = import.meta.env.VITE_REPO as string | undefined
@@ -19,7 +20,7 @@ export default function Methodology() {
   const target = kind && id ? `${kind}-${id}` : ''
   useEffect(() => { if (target) document.getElementById(target)?.scrollIntoView(); else window.scrollTo(0, 0) }, [target])
   const cl = (k: string) => 'entry' + (target === k ? ' hl' : '')
-  const companies = new Set(LAYERS.flatMap(l => l.roster.map(c => c.n))).size
+  const eco = registryStats()
   const issue = repo ? `https://github.com/${repo}/issues/new?title=${encodeURIComponent('Data or methodology issue: ')}` : undefined
 
   return (
@@ -117,7 +118,7 @@ export default function Methodology() {
 
         <section id="coverage-matrix" className={cl('coverage-matrix')}>
           <h2>Classification and coverage</h2>
-          <p>No classification dataset is connected. Value-chain layers and the core, enabling and adjacent roles are draft judgments from the product brief. {companies} companies appear in the draft rosters. None has price quotes, price history or fundamentals yet. US filings cover the US names, as the freshness ledger states.</p>
+          <p>The technology ecosystem registry (<code>src/data/technology-ecosystem.ts</code>) holds {eco.entities} entities ({eco.us} US and {eco.india} Indian public companies, {eco.otherPublic} other public companies and {eco.priv} private organisations), {eco.memberships} layer memberships and {eco.relations} relationships. Every entity and relationship names a source, but the specific statements have not been checked against those sources: {eco.checked} entities and {eco.relChecked} relationships are marked checked, and {eco.uncertain} memberships are flagged as uncertain. Classification is a project judgement, and a relationship is never inferred from a shared category. Ticker and exchange are shown only for the {eco.entities - eco.noResearch} companies in the SEC pipeline; the other {eco.noResearch} have no research page.</p>
         </section>
 
         <section id="coverage-india" className={cl('coverage-india')}>
@@ -138,7 +139,7 @@ export default function Methodology() {
         <section id="policy-corrections" className={cl('policy-corrections')}>
           <h2>Policy and corrections</h2>
           <p><b>Event policy.</b> An event is listed only with a headline, company or industry, event date, publication timestamp, named source, factual description and the original URL. No unsourced summaries and no causal claims.</p>
-          <p><b>Change log.</b> 2026-11-12: company research pages with annual statements, history charts, filings and a company directory, plus multi-year fundamentals history and company profiles from SEC submissions. 2026-11-11: annual US fundamentals from SEC XBRL company facts, with statements and derived indicators. 2026-11-10: audit fixes, calendar-based USD/INR returns, STALE status, validated refreshes, filing amendments and 8-K categories, synthetic basket calculation removed from production, Indian coverage report. 2026-11-07: real data pipeline (Frankfurter FX and SEC EDGAR filings) and the live freshness ledger. 2026-11-06: first build with synthetic DEMO data.</p>
+          <p><b>Change log.</b> 2026-11-13: Technology and AI ecosystem (seven layers, 57 sub-industries, company registry with evidence status, relationships, directory, breakdown and an India and US comparison). 2026-11-12: company research pages with annual statements, history charts, filings and a company directory, plus multi-year fundamentals history and company profiles from SEC submissions. 2026-11-11: annual US fundamentals from SEC XBRL company facts, with statements and derived indicators. 2026-11-10: audit fixes, calendar-based USD/INR returns, STALE status, validated refreshes, filing amendments and 8-K categories, synthetic basket calculation removed from production, Indian coverage report. 2026-11-07: real data pipeline (Frankfurter FX and SEC EDGAR filings) and the live freshness ledger. 2026-11-06: first build with synthetic DEMO data.</p>
           <p><b>Corrections.</b> {issue ? <a href={issue}>Report a data or methodology issue</a> : 'The issue link appears once the site is built in GitHub Actions.'}</p>
         </section>
 

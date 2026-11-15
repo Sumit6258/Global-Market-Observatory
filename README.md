@@ -11,6 +11,7 @@ A static financial-research site (React, TypeScript, Vite) on GitHub Pages, refr
 | Indian index and equity prices (NSE, BSE) | Not implemented, blocked by licensing |
 | US annual fundamentals and ratios from SEC XBRL company facts | Implemented, tested on fixtures only, needs its first real run to verify |
 | Company research pages and directory (statements, history charts, filings, provenance) | Implemented, layout tested in a headless browser with test fixtures, needs the first real refresh to show real history and profiles |
+| Technology and AI ecosystem (seven-layer map, directory, breakdown, relationships, India and US structure) | Implemented. Every source is identified but no classification or relationship has been checked against its source |
 | US prices, baskets, sector landscape | Not implemented, need a licensed price source |
 
 Nothing synthetic ships to production. Synthetic figures exist only in development builds made with `VITE_DEMO=1`.

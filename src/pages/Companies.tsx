@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useData, type CompaniesFile, type FundFile, type Profile } from '../data'
-import { companyPath, filterCompanies, show } from '../lib/statement'
+import { companyPath, filterCompanies, show, uniq } from '../lib/statement'
 
 export default function Companies() {
   const prof = useData<CompaniesFile>('companies.json')
@@ -35,7 +35,7 @@ export default function Companies() {
               <tbody>
                 {rows.map(c => {
                   const f = fund.data?.companies.find(x => x.ticker === c.ticker)
-                  return <tr key={c.ticker}><td><Link to={companyPath(c.ticker)}>{c.company}</Link></td><td>{c.ticker}</td><td>{c.exchanges.join(', ') || 'n/a'}</td><td>{c.country ?? 'n/a'}</td><td>{c.industry ?? 'n/a'}</td><td>{f?.fiscalYearEnd ?? 'n/a'}</td><td>{show(f?.metrics.revenue, 'usd')}</td></tr>
+                  return <tr key={c.ticker}><td><Link to={companyPath(c.ticker)}>{c.company}</Link></td><td>{c.ticker}</td><td>{uniq(c.exchanges).join(', ') || 'n/a'}</td><td>{c.country ?? 'n/a'}</td><td>{c.industry ?? 'n/a'}</td><td>{f?.fiscalYearEnd ?? 'n/a'}</td><td>{show(f?.metrics.revenue, 'usd')}</td></tr>
                 })}
               </tbody>
             </table>

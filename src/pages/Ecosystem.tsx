@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { CATEGORIES, ENTITIES, KIND_LABEL, LAYERS, LAYER_LINKS, PART_TEXT, type Entity, type Part } from '../data/technology-ecosystem'
 import { NO_FILTERS, breakdown, category, chipActive, chipsIn, entityById, filterEntities, multiLayer, registryStats, relationsOf, researchPath, type Filters } from '../lib/ecosystem'
 import { useData, type CompaniesFile } from '../data'
+import { uniq } from '../lib/statement'
 
 const PART: Record<Part, string> = { core: 'Core', enabling: 'Enabling', adjacent: 'Adjacent' }
 type View = 'map' | 'directory' | 'breakdown'
@@ -33,12 +34,13 @@ function FilterBar({ f, setF, onReset }: { f: Filters; setF: SetF; onReset: () =
   )
 }
 
-function Chip({ e, m, f, selected, select, layer }: { e: Entity; m: Entity['memberships'][number]; f: Filters; selected?: Entity; select: (id: string) => void; layer: number }) {
-  const on = chipActive(e, m, f)
+function Chip({ e, m, ms, f, selected, select, layer }: { e: Entity; m: Entity['memberships'][number]; ms: Entity['memberships']; f: Filters; selected?: Entity; select: (id: string) => void; layer: number }) {
+  const on = chipActive(e, layer, f)
+  const unsure = ms.some(x => x.uncertain)
   return (
     <button className={`chip ${m.part}${on ? '' : ' dim'}${selected?.id === e.id ? ' sel' : ''}`} data-eid={e.id} data-layer={layer} aria-pressed={selected?.id === e.id}
-      aria-label={`${e.name}, ${PART[m.part]}${e.status === 'private' ? ', private organisation' : ''}${m.uncertain ? ', classification needs review' : ''}`} onClick={() => select(e.id)}>
-      {e.name}{e.status === 'private' && <span className="tagp">PRIVATE</span>}{m.uncertain && <span className="tagp">?</span>}
+      aria-label={`${e.name}, ${PART[m.part]}${e.status === 'private' ? ', private organisation' : ''}${unsure ? ', classification needs review' : ''}`} onClick={() => select(e.id)}>
+      {e.name}{e.status === 'private' && <span className="tagp">PRIVATE</span>}{unsure && <span className="tagp">?</span>}
     </button>
   )
 }
@@ -76,7 +78,7 @@ function EcoMap({ f, setF, selected, select }: { f: Filters; setF: SetF; selecte
       <svg className="eco-lines" aria-hidden="true">{paths.map(p => <path key={p.key} d={p.d} className={`k-${p.kind}`} />)}</svg>
       {LAYERS.map(l => {
         const chips = chipsIn(l.n)
-        const n = chips.filter(({ e, m }) => chipActive(e, m, f)).length
+        const n = chips.filter(({ e }) => chipActive(e, l.n, f)).length
         const link = LAYER_LINKS.find(k => k.from === l.n && k.to === l.n + 1)
         return (
           <section key={l.n} className={`band${f.layer !== null && f.layer !== l.n ? ' faded' : ''}`} aria-label={l.name}>
@@ -92,7 +94,7 @@ function EcoMap({ f, setF, selected, select }: { f: Filters; setF: SetF; selecte
                 </div>
               )}
             </header>
-            <ul className="chips">{chips.map(({ e, m }) => <li key={e.id}><Chip e={e} m={m} f={f} selected={selected} select={select} layer={l.n} /></li>)}</ul>
+            <ul className="chips">{chips.map(({ e, m, ms }) => <li key={e.id}><Chip e={e} m={m} ms={ms} f={f} selected={selected} select={select} layer={l.n} /></li>)}</ul>
             {link && <p className="flow">{link.text}</p>}
           </section>
         )
@@ -107,7 +109,7 @@ function Accordion({ f, setF, select }: { f: Filters; setF: SetF; select: (id: s
     <div>
       {LAYERS.map(l => {
         const isOpen = open.includes(l.n)
-        const rows = chipsIn(l.n).filter(({ e, m }) => chipActive(e, m, f))
+        const rows = chipsIn(l.n).filter(({ e }) => chipActive(e, l.n, f))
         return (
           <section key={l.n} aria-label={l.name}>
             <h2 className="acc-h"><button aria-expanded={isOpen} aria-controls={`acc-${l.n}`} onClick={() => setOpen(isOpen ? open.filter(x => x !== l.n) : [...open, l.n])}><span>{l.n}. {l.name}</span><span className="mute">{rows.length}</span></button></h2>
@@ -118,7 +120,7 @@ function Accordion({ f, setF, select }: { f: Filters; setF: SetF; select: (id: s
                   {CATEGORIES.filter(c => c.layer === l.n).map(c => <button key={c.id} aria-pressed={f.cat === c.id} onClick={() => setF(f.cat === c.id ? { ...f, layer: null, cat: null } : { ...f, layer: l.n, cat: c.id })}>{c.name}</button>)}
                 </div>
                 <ul className="erows">
-                  {rows.map(({ e, m }) => <li key={e.id}><button className="erow" onClick={() => select(e.id)}><b>{e.name}</b><span className="mute">{e.country}, {PART[m.part]}{e.status === 'private' ? ', private' : ''}</span></button></li>)}
+                  {rows.map(({ e, m, ms }) => <li key={e.id}><button className="erow" onClick={() => select(e.id)}><b>{e.name}</b><span className="mute">{e.country}, {PART[m.part]}{e.status === 'private' ? ', private' : ''}</span><span className="mute">{ms.map(x => category(x.cat)?.name).join(', ')}</span></button></li>)}
                 </ul>
                 {!rows.length && <p className="mute">No entries match the current filters.</p>}
                 {LAYER_LINKS.find(k => k.from === l.n && k.to === l.n + 1) && <p className="flow">{LAYER_LINKS.find(k => k.from === l.n && k.to === l.n + 1)?.text}</p>}
@@ -148,7 +150,7 @@ function Panel({ e, onClose, select, sheet }: { e: Entity; onClose: () => void; 
   const facts: [string, React.ReactNode][] = [
     ['Primary role', role(first)],
     ['Other roles', rest.length ? rest.map(m => role(m)).join('; ') : 'None recorded'],
-    ['Listing', e.status === 'private' ? 'Private organisation. No ticker, price or valuation is shown.' : e.ticker ? `${e.ticker}${prof?.exchanges.length ? `, ${prof.exchanges.join(', ')}` : ''}, from the SEC pipeline` : 'Public company. Ticker and exchange are not verified here, so none is shown.'],
+    ['Listing', e.status === 'private' ? 'Private organisation. No ticker, price or valuation is shown.' : e.ticker ? `${e.ticker}${prof?.exchanges.length ? `, ${uniq(prof.exchanges).join(', ')}` : ''}, from the SEC pipeline` : 'Public company. Ticker and exchange are not verified here, so none is shown.'],
     ...(prof?.industry ? [['SEC industry', prof.industry] as [string, React.ReactNode]] : []),
     ['Description', e.desc],
   ]
@@ -163,6 +165,7 @@ function Panel({ e, onClose, select, sheet }: { e: Entity; onClose: () => void; 
       <p>{e.evidenceChecked ? 'Checked against the source.' : 'Source identified. The specific statement has not been checked against it.'}</p>
       <ul>{e.sources.map(u => <li key={u}><a href={u} rel="noopener noreferrer">{u.includes('sec.gov') ? 'Latest 10-K filing index (SEC)' : u.replace('https://', '').replace(/\/$/, '')}</a></li>)}</ul>
       <h3>Relationships</h3>
+      {rel.length > 0 && <p className="note">Map lines: solid is a commercial relationship, dashed is a product integration, dotted is a competitor.</p>}
       {rel.length ? (
         <ul>
           {rel.map(r => {

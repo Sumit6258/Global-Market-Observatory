@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { CATEGORIES, ENTITIES, LAYERS, RELATIONS } from '../data/technology-ecosystem'
-import { NO_FILTERS, breakdown, chipActive, entityById, filterEntities, multiLayer, registryStats, relationsOf, researchPath, validate } from './ecosystem'
+import { NO_FILTERS, breakdown, chipActive, chipsIn, entityById, filterEntities, multiLayer, registryStats, relationsOf, researchPath, validate } from './ecosystem'
 
 const ids = (f: Parameters<typeof filterEntities>[0]) => filterEntities(f).map(e => e.id)
 const copy = () => ({ entities: structuredClone(ENTITIES), categories: structuredClone(CATEGORIES), relations: structuredClone(RELATIONS) })
@@ -63,11 +63,14 @@ describe('filters', () => {
     expect(ids({ ...NO_FILTERS, q: 'tata' })).toEqual(['tataelxsi'])
     expect(filterEntities({ ...NO_FILTERS, region: 'United States', status: 'public', layer: 3 }).some(e => e.country === 'India')).toBe(false)
   })
-  it('dims only the memberships that do not match', () => {
+  it('shows one chip per company per layer and dims it only when no membership in that layer matches', () => {
     const nvidia = entityById('nvidia')!
     const f = { ...NO_FILTERS, layer: 1, cat: 'gpu' }
-    expect(chipActive(nvidia, nvidia.memberships.find(m => m.cat === 'gpu')!, f)).toBe(true)
-    expect(chipActive(nvidia, nvidia.memberships.find(m => m.cat === 'design')!, f)).toBe(false)
+    expect(chipActive(nvidia, 1, f)).toBe(true)
+    expect(chipActive(nvidia, 2, f)).toBe(false)
+    expect(chipActive(entityById('intel')!, 1, f)).toBe(false)
+    expect(chipsIn(1).filter(c => c.e.id === 'nvidia')).toHaveLength(1)
+    expect(chipsIn(1).find(c => c.e.id === 'tsmc')!.ms).toHaveLength(2)
   })
 })
 

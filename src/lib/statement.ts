@@ -15,6 +15,9 @@ export const DERIVED_BY: Record<Statement, string[]> = {
   'Cash flow statement': ['freeCashFlow', 'fcfMargin'],
 }
 
+// SEC lists an exchange once per security, so the same name can repeat.
+export const uniq = <T>(a: T[]) => [...new Set(a)]
+
 export const companyPath = (ticker: string) => `/company/${ticker}`
 export const filingUrl = (cik: number, accession: string) => `https://www.sec.gov/Archives/edgar/data/${cik}/${accession.replace(/-/g, '')}/${accession}-index.htm`
 export const edgarCompanyUrl = (cik: number) => `https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=${cik}&type=&dateb=&owner=include&count=40`

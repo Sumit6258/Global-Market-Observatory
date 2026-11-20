@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { Chart } from '../lib/charts'
-import { STATEMENTS, edgarCompanyUrl, filingUrl, fiscalYearEndLabel, seriesOf, shortUsd, show, statementRows, yearsOf, type Statement } from '../lib/statement'
+import { STATEMENTS, uniq, edgarCompanyUrl, filingUrl, fiscalYearEndLabel, seriesOf, shortUsd, show, statementRows, yearsOf, type Statement } from '../lib/statement'
 import { ago, categoriesOf, effStatus, etTime, itemText, useData, useStatus, type CompaniesFile, type FilingsFile, type FundFile } from '../data'
 import { Tag } from '../ui'
 import { ENTITIES } from '../data/technology-ecosystem'
@@ -39,7 +39,7 @@ export default function Company() {
   const eco = ENTITIES.find(x => x.research === T)
   const facts: [string, ReactNode][] = [
     ['Ticker', T], ['SEC registrant name', pr?.name ?? 'Not provided'], ['CIK', cik ?? 'Not provided'],
-    ['Exchange', pr?.exchanges.join(', ') || 'Not provided'],
+    ['Exchange', uniq(pr?.exchanges ?? []).join(', ') || 'Not provided'],
     ['Country', pr?.country ?? 'Not provided'],
     ['Industry (SEC SIC)', pr?.industry ? `${pr.industry}${pr.sic ? `, SIC ${pr.sic}` : ''}` : 'Not provided'],
     ['Fiscal year end', fiscalYearEndLabel(pr?.fiscalYearEnd) ?? 'Not provided'],

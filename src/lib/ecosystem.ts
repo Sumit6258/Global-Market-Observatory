@@ -12,11 +12,15 @@ export const relationsOf = (id: string) => RELATIONS.filter(r => r.from === id |
 const memberOk = (m: Membership, f: Filters) => (f.layer === null || m.layer === f.layer) && (f.cat === null || m.cat === f.cat) && (f.part === 'All' || m.part === f.part)
 const entityOk = (e: Entity, f: Filters) => (f.region === 'Global' || e.country === f.region) && (f.status === 'All' || e.status === f.status) && (!f.q.trim() || e.name.toLowerCase().includes(f.q.trim().toLowerCase()))
 export const matchesEntity = (e: Entity, f: Filters) => entityOk(e, f) && e.memberships.some(m => memberOk(m, f))
-export const chipActive = (e: Entity, m: Membership, f: Filters) => entityOk(e, f) && memberOk(m, f)
+// One chip per company per layer. It is active when any of the company's memberships in that layer matches the filters.
+export const chipActive = (e: Entity, layer: number, f: Filters) => entityOk(e, f) && e.memberships.some(m => m.layer === layer && memberOk(m, f))
 export const filterEntities = (f: Filters) => ENTITIES.filter(e => matchesEntity(e, f))
 
 const ORDER: Record<Part, number> = { core: 0, enabling: 1, adjacent: 2 }
-export const chipsIn = (layer: number) => ENTITIES.flatMap(e => e.memberships.filter(m => m.layer === layer).map(m => ({ e, m }))).sort((a, b) => ORDER[a.m.part] - ORDER[b.m.part] || a.e.name.localeCompare(b.e.name))
+export const chipsIn = (layer: number) => ENTITIES.flatMap(e => {
+  const ms = e.memberships.filter(m => m.layer === layer)
+  return ms.length ? [{ e, ms, m: [...ms].sort((a, b) => ORDER[a.part] - ORDER[b.part])[0] }] : []
+}).sort((a, b) => ORDER[a.m.part] - ORDER[b.m.part] || a.e.name.localeCompare(b.e.name))
 
 export function breakdown() {
   return LAYERS.map(layer => ({

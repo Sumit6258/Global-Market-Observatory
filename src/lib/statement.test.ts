@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { FundCo, FundMetric, FundYear, Profile } from '../data'
-import { companyPath, filingUrl, filterCompanies, fiscalYearEndLabel, seriesOf, show, statementRows, yearsOf } from './statement'
+import { uniq, companyPath, filingUrl, filterCompanies, fiscalYearEndLabel, seriesOf, show, statementRows, yearsOf } from './statement'
 
 const schema: FundMetric[] = [
   { key: 'revenue', label: 'Revenue', group: 'Income statement', kind: 'usd' },
@@ -70,6 +70,7 @@ describe('company navigation', () => {
     expect(filterCompanies(list, '', 'United States', 'Software').map(c => c.ticker)).toEqual(['MSFT'])
     expect(filterCompanies(list, '', 'India', 'Semiconductors')).toEqual([])
   })
+  it('removes repeated exchange names from the SEC profile', () => { expect(uniq(['Nasdaq', 'Nasdaq', 'Nasdaq'])).toEqual(['Nasdaq']); expect(uniq(['NYSE', 'Nasdaq'])).toEqual(['NYSE', 'Nasdaq']) })
   it('builds company and filing links', () => {
     expect(companyPath('MSFT')).toBe('/company/MSFT')
     expect(filingUrl(789019, '0000950170-25-100235')).toBe('https://www.sec.gov/Archives/edgar/data/789019/000095017025100235/0000950170-25-100235-index.htm')

@@ -162,7 +162,8 @@ function Panel({ e, onClose, select, sheet }: { e: Entity; onClose: () => void; 
       <h3>Why it belongs</h3>
       <ul>{e.memberships.map(m => <li key={`${m.layer}${m.cat}`}><b>{category(m.cat)?.name}.</b> {PART_TEXT[m.part]} {category(m.cat)?.def}{m.uncertain ? ' Needs review: this classification is uncertain.' : ''}</li>)}</ul>
       <h3>Evidence</h3>
-      <p>{e.evidenceChecked ? 'Checked against the source.' : 'Source identified. The specific statement has not been checked against it.'}</p>
+      {e.memberships.some(m => m.check) && <ul>{e.memberships.filter(m => m.check).map(m => <li key={m.cat}><b>Checked, {category(m.cat)?.name}:</b> {m.check?.note} <a href={m.check?.url} rel="noopener noreferrer">source</a></li>)}</ul>}
+      <p>{e.memberships.every(m => m.check) ? 'Every role above is checked against a source.' : 'A role without a check above has an identified source that has not yet been checked against the statement.'}</p>
       <ul>{e.sources.map(u => <li key={u}><a href={u} rel="noopener noreferrer">{u.includes('sec.gov') ? 'Latest 10-K filing index (SEC)' : u.replace('https://', '').replace(/\/$/, '')}</a></li>)}</ul>
       <h3>Relationships</h3>
       {rel.length > 0 && <p className="note">Map lines: solid is a commercial relationship, dashed is a product integration, dotted is a competitor.</p>}
@@ -173,8 +174,8 @@ function Panel({ e, onClose, select, sheet }: { e: Entity; onClose: () => void; 
             return (
               <li key={`${r.from}${r.to}${r.type}`}>
                 <b>{a?.name} {r.type.toLowerCase()} {b?.name}</b> <span className="tag">{KIND_LABEL[r.kind]}</span><br />
-                {r.text} {r.checked ? '' : 'Not yet checked against its source.'}{' '}
-                {r.sources.map((u, i) => <a key={u} href={u} rel="noopener noreferrer">source {i + 1}</a>)}{' '}
+                {r.text} {r.check ? <>Checked: {r.check.note} <a href={r.check.url} rel="noopener noreferrer">source</a></> : 'Not yet checked against its source.'}{' '}
+                {r.sources.map((u, i) => <span key={u}>{i ? ', ' : ''}<a href={u} rel="noopener noreferrer">source {i + 1}</a></span>)}{' '}
                 {other && <button className="link" onClick={() => select(other.id)}>Open {other.name}</button>}
               </li>
             )
@@ -292,7 +293,7 @@ export default function Ecosystem() {
           {([['map', 'Ecosystem map'], ['directory', 'Company directory'], ['breakdown', 'Industry breakdown']] as [View, string][]).map(([v, t]) => <button key={v} aria-pressed={view === v} onClick={() => setView(v)}>{t}</button>)}
         </div>
         <FilterBar f={f} setF={setF} onReset={reset} />
-        <p className="note">{shown} of {s.entities} companies and organisations match. Sources are identified for every entry, but {s.entities - s.checked} of {s.entities} have not been checked against them. <Link to="/methodology/coverage/matrix">Coverage</Link></p>
+        <p className="note">{shown} of {s.entities} companies and organisations match. {s.checkedMemberships} of {s.memberships} role classifications and {s.checkedRelations} of {s.relations} relationships are checked against a source. The rest have an identified source that is not yet checked. <Link to="/methodology/coverage/matrix">Coverage</Link></p>
         {splat && !selected && <p>No entry has the identifier “{splat}”. <button className="link" onClick={reset}>Back to the full ecosystem</button></p>}
       </section>
       <div className={mobile ? '' : 'eco-layout'}>

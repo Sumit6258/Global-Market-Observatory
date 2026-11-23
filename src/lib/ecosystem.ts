@@ -41,7 +41,8 @@ export function registryStats() {
     us: pub.filter(e => e.country === 'United States').length, india: pub.filter(e => e.country === 'India').length,
     otherPublic: pub.filter(e => e.country !== 'United States' && e.country !== 'India').length,
     memberships: ENTITIES.reduce((n, e) => n + e.memberships.length, 0), relations: RELATIONS.length,
-    checked: ENTITIES.filter(e => e.evidenceChecked).length, relChecked: RELATIONS.filter(r => r.checked).length,
+    checkedMemberships: ENTITIES.reduce((n, e) => n + e.memberships.filter(m => m.check).length, 0), checkedRelations: RELATIONS.filter(r => r.check).length,
+    checkedEntities: ENTITIES.filter(e => e.memberships.some(m => m.check)).length,
     noResearch: ENTITIES.filter(e => !e.research).length, uncertain: ENTITIES.reduce((n, e) => n + e.memberships.filter(m => m.uncertain).length, 0),
   }
 }
@@ -71,6 +72,7 @@ export function validate(r: Registry = { entities: ENTITIES, categories: CATEGOR
     if (new Set(e.memberships.map(m => `${m.layer}/${m.cat}`)).size !== e.memberships.length) out.push(`${e.id} repeats a category membership`)
     if (!e.sources.length || !e.sources.every(https)) out.push(`${e.id} needs https source URLs`)
     if (!day(e.lastReviewed)) out.push(`${e.id} has an invalid review date`)
+    for (const m of e.memberships) if (m.check && (!https(m.check.url) || !m.check.note.trim() || !day(m.check.date) || !e.sources.includes(m.check.url))) out.push(`${e.id}: the check on ${m.cat} needs an https URL listed in sources, a note and a date`)
     if (e.status !== 'public' && e.status !== 'private') out.push(`${e.id} has an invalid status`)
     if (e.status === 'private' && (e.ticker || e.research)) out.push(`${e.id} is private but has a ticker`)
     if (e.ticker && !/^[A-Z.]{1,6}$/.test(e.ticker)) out.push(`${e.id} has an invalid ticker`)
@@ -82,6 +84,7 @@ export function validate(r: Registry = { entities: ENTITIES, categories: CATEGOR
   for (const x of r.relations) {
     if (!ids.has(x.from) || !ids.has(x.to)) out.push(`relation ${x.from} to ${x.to} references an unknown entity`)
     if (x.from === x.to) out.push(`relation ${x.from} points to itself`)
+    if (x.check && (!https(x.check.url) || !x.check.note.trim() || !day(x.check.date) || !x.sources.includes(x.check.url))) out.push(`relation ${x.from} to ${x.to}: the check needs an https URL listed in sources, a note and a date`)
     if (!x.sources.length || !x.sources.every(https)) out.push(`relation ${x.from} to ${x.to} needs https source URLs`)
     const key = x.kind === 'competitive' ? `${[x.from, x.to].sort().join('|')}|competitive` : `${x.from}|${x.to}|${x.kind}|${x.type}`
     if (seen.has(key)) out.push(`duplicate relation ${x.from} to ${x.to}`)

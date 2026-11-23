@@ -17,7 +17,17 @@ describe('registry integrity', () => {
     for (const e of ENTITIES.filter(x => x.status === 'private')) { expect(e.ticker).toBeUndefined(); expect(researchPath(e)).toBeNull() }
     expect(ENTITIES.filter(e => e.status === 'private').map(e => e.id).sort()).toEqual(['anthropic', 'openai'])
   })
-  it('marks every classification as unchecked until it is', () => { expect(registryStats().checked).toBe(0); expect(RELATIONS.every(r => !r.checked)).toBe(true) })
+  it('counts a classification as checked only when a source page and note are recorded', () => {
+    const s = registryStats()
+    expect(s.checkedMemberships).toBe(ENTITIES.flatMap(e => e.memberships).filter(m => m.check).length)
+    expect(s.checkedMemberships).toBeGreaterThan(0)
+    expect(s.checkedMemberships).toBeLessThan(s.memberships)
+    expect(s.checkedRelations).toBe(RELATIONS.filter(r => r.check).length)
+  })
+  it('no longer flags a membership as uncertain once it is checked', () => {
+    for (const e of ENTITIES) for (const m of e.memberships) if (m.check) expect(m.uncertain).toBeUndefined()
+    expect(entityById('intel')!.memberships.find(m => m.cat === 'accel')!.part).toBe('core')
+  })
 })
 
 describe('validation catches problems', () => {
@@ -34,6 +44,11 @@ describe('validation catches problems', () => {
     const r = copy(); r.relations.push({ ...r.relations[0], to: 'ghost' }, { ...r.relations[1], to: r.relations[1].from }, { ...r.relations[2] })
     const p = validate(r).join()
     expect(p).toContain('unknown entity'); expect(p).toContain('points to itself'); expect(p).toContain('duplicate relation')
+  })
+  it('a check needs an https URL listed in sources, a note and a date', () => {
+    const r = copy(); const m = r.entities.find(e => e.id === 'intel')!.memberships.find(x => x.check)!
+    m.check!.note = ' '; expect(validate(r).join()).toContain('the check on accel needs')
+    const q = copy(); const rel = q.relations.find(x => x.check)!; rel.check!.url = 'http://example.com'; expect(validate(q).join()).toContain('the check needs an https URL')
   })
   it('a competitor pair listed in both directions counts as a duplicate', () => {
     const r = copy(); const c = r.relations.find(x => x.kind === 'competitive')!; r.relations.push({ ...c, from: c.to, to: c.from })

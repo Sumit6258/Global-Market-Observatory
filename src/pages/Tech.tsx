@@ -15,7 +15,7 @@ export default function Tech() {
         <p className="lede">The technology economy by economic role, from chips to services. Explore how the seven layers connect, who operates in each, and open a company’s research page.</p>
         <p><Link className="cta" to="/technology-ecosystem">Open the Technology and AI ecosystem</Link></p>
         <ol className="plain">{LAYERS.map(l => <li key={l.n}>{l.n}. {l.name}</li>)}</ol>
-        <p className="note">{s.entities} entities and {s.relations} relationships. Sources are identified for each, but {s.entities - s.checked} entities have not been checked against them. <Link to="/methodology/coverage/matrix">See coverage</Link></p>
+        <p className="note">{s.entities} entities and {s.relations} relationships. {s.checkedMemberships} of {s.memberships} role classifications and {s.checkedRelations} of {s.relations} relationships are checked against a source; the rest have an identified source that is not yet checked. <Link to="/methodology/coverage/matrix">See coverage</Link></p>
       </section>
 
       <Fundamentals />

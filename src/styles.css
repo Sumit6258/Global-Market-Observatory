@@ -98,3 +98,4 @@ button.chip.core[aria-pressed=true]{background:var(--ink);color:var(--paper)}but
 @media(max-width:900px){.eco-layout{grid-template-columns:minmax(0,1fr)}.band header{grid-template-columns:minmax(0,1fr)}button.link{min-height:44px;padding:0 4px}}
 @media(max-width:900px){button,select,summary,input[type=search]{min-height:44px}}
 .eco-lines{z-index:0}.chip{position:relative;z-index:1}.band header{position:relative;z-index:1}
+.panel li,.panel dd,.panel p{overflow-wrap:anywhere}

@@ -3,14 +3,16 @@ import { K } from './sec-sources'
 // The single source of truth for the technology ecosystem. Nothing here is market data.
 // Every entity and relationship names a source, but no statement has yet been checked against its source.
 export const REVIEWED_ON = '2026-11-13'
+export const CHECKED_ON = '2026-11-22'
 
 export type Part = 'core' | 'enabling' | 'adjacent'
+export interface Check { url: string; note: string; date: string }
 export interface Layer { n: number; name: string; summary: string }
 export interface Category { id: string; layer: number; name: string; def: string }
-export interface Membership { layer: number; cat: string; part: Part; uncertain?: boolean }
-export interface Entity { id: string; name: string; country: string; status: 'public' | 'private'; ticker?: string; research?: string; desc: string; memberships: Membership[]; sources: string[]; lastReviewed: string; evidenceChecked: boolean }
+export interface Membership { layer: number; cat: string; part: Part; uncertain?: boolean; check?: Check }
+export interface Entity { id: string; name: string; country: string; status: 'public' | 'private'; ticker?: string; research?: string; desc: string; memberships: Membership[]; sources: string[]; lastReviewed: string }
 export type RelKind = 'commercial' | 'integration' | 'competitive'
-export interface Relation { from: string; to: string; kind: RelKind; type: string; text: string; sources: string[]; checked: boolean }
+export interface Relation { from: string; to: string; kind: RelKind; type: string; text: string; sources: string[]; check?: Check }
 export interface LayerLink { from: number; to: number; text: string }
 
 export const PART_TEXT: Record<Part, string> = {
@@ -101,19 +103,27 @@ export const CATEGORIES: Category[] = [
   c(7, 'pauto', 'Process automation', 'Control and software systems that automate industrial and business processes.'),
 ]
 
-type M = [layer: number, cat: string, part: Part, uncertain?: true]
+type M = [layer: number, cat: string, part: Part, uncertain?: true, check?: Check]
+const ck = (url: string, note: string): Check => ({ url, note, date: CHECKED_ON })
+// Pages read during the 2026-11-22 source check. Each claim was confirmed on the company's own page.
+const GAUDI = 'https://intel.com/content/www/us/en/products/details/processors/ai-accelerators/gaudi3.html'
+const PHI = 'https://azure.microsoft.com/en-us/blog/introducing-phi-3-redefining-whats-possible-with-slms/'
+const NOVA = 'https://aws.amazon.com/about-aws/whats-new/2024/12/amazon-nova-foundation-models-bedrock'
+const GRANITE = 'https://ibm.com/think/news/granite-foundation-models'
+const MICRON_H200 = 'https://investors.micron.com/node/46656'
+const MICRON_AMD = 'https://micron.gcs-web.com/node/48946'
 const US = 'United States'
 const E = (id: string, name: string, country: string, status: 'public' | 'private', desc: string, m: M[], sources: string[], ticker?: string): Entity => ({
-  id, name, country, status, desc, sources, ticker, research: ticker, lastReviewed: REVIEWED_ON, evidenceChecked: false,
-  memberships: m.map(([layer, cat, part, uncertain]) => ({ layer, cat, part, ...(uncertain ? { uncertain } : {}) })),
+  id, name, country, status, desc, sources, ticker, research: ticker, lastReviewed: m.some(x => x[4]) ? CHECKED_ON : REVIEWED_ON,
+  memberships: m.map(([layer, cat, part, uncertain, check]) => ({ layer, cat, part, ...(uncertain ? { uncertain } : {}), ...(check ? { check } : {}) })),
 })
-const pub = (id: string, name: string, country: string, desc: string, m: M[], url: string, ticker?: string) => E(id, name, country, 'public', desc, m, [url], ticker)
+const pub = (id: string, name: string, country: string, desc: string, m: M[], url: string | string[], ticker?: string) => E(id, name, country, 'public', desc, m, Array.isArray(url) ? url : [url], ticker)
 
 export const ENTITIES: Entity[] = [
   // Layer 1 and 2: hardware and infrastructure
   pub('nvidia', 'NVIDIA', US, 'Designs GPUs, AI accelerators, networking and the CUDA software platform; its chips are made by contract foundries.', [[1, 'gpu', 'core'], [1, 'design', 'core'], [2, 'accel', 'core'], [2, 'net', 'core']], K.NVDA, 'NVDA'),
   pub('amd', 'AMD', US, 'Designs x86 CPUs, GPUs and AI accelerators; its chips are made by contract foundries.', [[1, 'cpu', 'core'], [1, 'gpu', 'core'], [2, 'accel', 'core']], K.AMD, 'AMD'),
-  pub('intel', 'Intel', US, 'Designs and manufactures x86 CPUs and runs a contract foundry business.', [[1, 'cpu', 'core'], [1, 'foundry', 'core'], [2, 'accel', 'adjacent', true]], K.INTC, 'INTC'),
+  pub('intel', 'Intel', US, 'Designs and manufactures x86 CPUs, sells Gaudi AI accelerators and runs a contract foundry business.', [[1, 'cpu', 'core'], [1, 'foundry', 'core'], [2, 'accel', 'core', undefined, ck(GAUDI, 'Intel’s own product page presents the Gaudi 3 AI accelerator.')]], [K.INTC, GAUDI], 'INTC'),
   pub('broadcom', 'Broadcom', US, 'Designs semiconductors for networking and custom AI accelerators, and sells infrastructure software.', [[1, 'design', 'core'], [2, 'net', 'core'], [5, 'esw', 'core']], K.AVGO, 'AVGO'),
   pub('qualcomm', 'Qualcomm', US, 'Designs processors and wireless chips without owning factories, and licenses its patents.', [[1, 'design', 'core']], 'https://www.qualcomm.com/'),
   pub('micron', 'Micron', US, 'Makes DRAM, NAND and high-bandwidth memory.', [[1, 'memory', 'core'], [1, 'storage', 'core'], [2, 'accel', 'enabling']], 'https://www.micron.com/'),
@@ -129,11 +139,11 @@ export const ENTITIES: Entity[] = [
   pub('equinix', 'Equinix', US, 'Operates colocation data centres and interconnection services.', [[2, 'dc', 'core']], 'https://www.equinix.com/'),
   pub('dlr', 'Digital Realty', US, 'Owns and operates data centres leased to enterprises and cloud providers.', [[2, 'dc', 'core']], 'https://www.digitalrealty.com/'),
   // Layer 3 and 4: cloud and models
-  pub('microsoft', 'Microsoft', US, 'Sells cloud infrastructure and platforms (Azure), productivity and developer software, and partners with OpenAI.', [[3, 'iaas', 'core'], [3, 'paas', 'core'], [5, 'prod', 'core'], [5, 'dev', 'core'], [4, 'llm', 'adjacent', true]], K.MSFT, 'MSFT'),
-  pub('amazon', 'Amazon', US, 'Operates Amazon Web Services, a cloud infrastructure and platform provider, alongside retail.', [[3, 'iaas', 'core'], [3, 'paas', 'core'], [3, 'cstor', 'core'], [4, 'fm', 'adjacent', true]], K.AMZN, 'AMZN'),
+  pub('microsoft', 'Microsoft', US, 'Sells cloud infrastructure and platforms (Azure), productivity and developer software, develops the Phi language models, and partners with OpenAI.', [[3, 'iaas', 'core'], [3, 'paas', 'core'], [5, 'prod', 'core'], [5, 'dev', 'core'], [4, 'llm', 'core', undefined, ck(PHI, 'Microsoft’s Azure blog describes Phi-3 as a family of open AI models developed by Microsoft.')]], [K.MSFT, PHI], 'MSFT'),
+  pub('amazon', 'Amazon', US, 'Operates Amazon Web Services, a cloud infrastructure and platform provider, develops the Nova foundation models, and runs retail.', [[3, 'iaas', 'core'], [3, 'paas', 'core'], [3, 'cstor', 'core'], [4, 'fm', 'core', undefined, ck(NOVA, 'Amazon announced its own Amazon Nova foundation models, available in Amazon Bedrock.')]], [K.AMZN, NOVA], 'AMZN'),
   pub('alphabet', 'Alphabet', US, 'Operates Google Cloud and develops Gemini models, TPU accelerators and Google Workspace.', [[3, 'iaas', 'core'], [4, 'fm', 'core'], [4, 'mm', 'core'], [4, 'research', 'core'], [2, 'accel', 'core'], [5, 'prod', 'core']], K.GOOGL, 'GOOGL'),
   pub('oracle', 'Oracle', US, 'Sells cloud infrastructure, databases and enterprise applications.', [[3, 'iaas', 'core'], [3, 'cdb', 'core'], [5, 'esw', 'core']], K.ORCL, 'ORCL'),
-  pub('ibm', 'IBM', US, 'Sells hybrid cloud and AI software, and provides consulting services.', [[3, 'ecloud', 'core'], [6, 'consult', 'core'], [4, 'fm', 'core', true]], K.IBM, 'IBM'),
+  pub('ibm', 'IBM', US, 'Sells hybrid cloud and AI software, develops the Granite foundation models, and provides consulting services.', [[3, 'ecloud', 'core'], [6, 'consult', 'core'], [4, 'fm', 'core', undefined, ck(GRANITE, 'IBM describes Granite as its own family of foundation models, offered in watsonx.')]], [K.IBM, GRANITE], 'IBM'),
   pub('salesforce', 'Salesforce', US, 'Sells cloud-based customer-relationship and enterprise software with AI agents.', [[5, 'esw', 'core'], [5, 'cs', 'core'], [5, 'eai', 'core'], [3, 'dplat', 'adjacent']], K.CRM, 'CRM'),
   pub('snowflake', 'Snowflake', US, 'Sells a cloud data platform that runs on the major cloud providers.', [[3, 'dplat', 'core'], [3, 'cstor', 'adjacent']], K.SNOW, 'SNOW'),
   pub('cloudflare', 'Cloudflare', US, 'Provides a global network offering security, performance and edge computing services.', [[3, 'cnet', 'core'], [5, 'sec', 'core'], [3, 'paas', 'adjacent']], K.NET, 'NET'),
@@ -173,14 +183,15 @@ export const ENTITIES: Entity[] = [
   pub('tesla', 'Tesla', US, 'Makes electric vehicles and develops driver-assistance and autonomy software.', [[7, 'av', 'core', true], [7, 'auton', 'core', true]], 'https://www.tesla.com/'),
 ]
 
-const R = (from: string, to: string, kind: RelKind, type: string, text: string, sources: string[]): Relation => ({ from, to, kind, type, text, sources, checked: false })
+const R = (from: string, to: string, kind: RelKind, type: string, text: string, sources: string[], check?: Check): Relation => ({ from, to, kind, type, text, sources, ...(check ? { check } : {}) })
 export const RELATIONS: Relation[] = [
   R('tsmc', 'nvidia', 'commercial', 'Manufactures for', 'NVIDIA relies on contract foundries, and its filings name TSMC as one of them.', [K.NVDA]),
   R('tsmc', 'amd', 'commercial', 'Manufactures for', 'AMD relies on contract foundries, and its filings name TSMC as one of them.', [K.AMD]),
   R('tsmc', 'broadcom', 'commercial', 'Manufactures for', 'Broadcom relies on contract foundries, and its filings name TSMC as one of them.', [K.AVGO]),
   R('asml', 'tsmc', 'commercial', 'Supplies technology to', 'ASML supplies lithography systems to leading chipmakers, TSMC among them.', ['https://www.asml.com/']),
   R('amat', 'tsmc', 'commercial', 'Supplies technology to', 'Applied Materials supplies fabrication equipment to leading chipmakers, TSMC among them.', ['https://www.appliedmaterials.com/']),
-  R('micron', 'nvidia', 'commercial', 'Supplies technology to', 'Micron supplies high-bandwidth memory used with NVIDIA accelerators.', ['https://www.micron.com/']),
+  R('micron', 'nvidia', 'commercial', 'Supplies technology to', 'Micron’s HBM3E memory is part of NVIDIA H200 GPUs.', [MICRON_H200], ck(MICRON_H200, 'Micron’s press release says its 24GB HBM3E will be part of NVIDIA H200 Tensor Core GPUs.')),
+  R('micron', 'amd', 'commercial', 'Supplies technology to', 'Micron’s HBM3E memory is designed into AMD Instinct MI350 Series GPUs.', [MICRON_AMD], ck(MICRON_AMD, 'Micron’s press release says its HBM3E 36GB 12-high memory is designed into the AMD Instinct MI350 Series.')),
   R('microsoft', 'openai', 'commercial', 'Operates infrastructure for', 'Azure hosts OpenAI models, and Microsoft is an investor in and partner of OpenAI.', [K.MSFT]),
   R('amazon', 'anthropic', 'commercial', 'Operates infrastructure for', 'AWS is a cloud partner of Anthropic, and Amazon is an investor in Anthropic.', [K.AMZN]),
   R('amazon', 'snowflake', 'commercial', 'Operates infrastructure for', 'Snowflake runs its platform on AWS, among other clouds.', [K.SNOW]),
